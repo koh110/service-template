@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "lint": "npm run lint --workspaces --if-present",
+    "format": "npm run format --workspaces"
+  },
+  "dependencies": {
+    "@biomejs/biome": "^2.2.4"
+  }
+}

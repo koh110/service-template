@@ -1,0 +1,26 @@
+{
+  "private": true,
+  "type": "module",
+  "name": "shared",
+  "exports": {
+    "./src/*": "./dist/src/*.js"
+  },
+  "scripts": {
+    "compile": "tsp compile .",
+    "format:tsp": "tsp format \"**/*.tsp\"",
+    "preopenapi-ts": "npm run compile",
+    "openapi-ts": "openapi-typescript ./tsp-output/schema/openapi.yaml --output ./src/generated/schema.ts",
+    "prebuild": "npm run openapi-ts",
+    "build": "tsc --build tsconfig.json",
+    "format": "biome format --write src"
+  },
+  "devDependencies": {
+    "@typespec/compiler": "^1.4.0",
+    "@typespec/http": "^1.4.0",
+    "@typespec/openapi": "^1.4.0",
+    "@typespec/openapi3": "^1.4.0",
+    "@typespec/rest": "^0.74.0",
+    "openapi-typescript": "^7.9.1",
+    "typescript": "^5.9.2"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "name": "bin",
+  "type": "module",
+  "scripts": {
+    "format": "biome format --write src",
+    "init-local": "node ./src/index.ts init-local"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2"
+  }
+}

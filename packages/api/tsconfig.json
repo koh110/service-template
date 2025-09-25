@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "incremental": true,
+    "strict": true,
+    "outDir": "dist",
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "target": "esnext",
+    "lib": ["ESNext"],
+    "module": "nodenext",
+    "skipLibCheck": true,
+    "paths": {
+      "shared": ["../shared"]
+    }
+  },
+  "exclude": ["node_modules", "**/*.test.ts"],
+  "references": [{ "path": "../shared" }]
+}

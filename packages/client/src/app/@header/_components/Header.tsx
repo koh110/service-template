@@ -1,6 +1,6 @@
-import { Link, Heading } from '../../_components/ui/index'
-import { getRoute } from '../../_lib/route'
 import { APP_NAME } from '../../../constants'
+import { Heading, Link } from '../../_components/ui/index'
+import { getRoute } from '../../_lib/route'
 
 export default async function Header() {
   return (

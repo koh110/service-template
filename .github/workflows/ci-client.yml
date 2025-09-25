@@ -1,0 +1,36 @@
+name: CI client
+
+on:
+  push:
+    paths:
+      - 'packages/client/**'
+      - 'package.json'
+    branches: [ main ]
+  pull_request:
+    paths:
+      - '.github/workflows/ci-client.yml'
+      - 'packages/shared/**'
+      - 'packages/client/**'
+      - 'package.json'
+    branches: [ main ]
+
+env:
+  WORKSPACE_NAME: client
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [24.x]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm ci
+      - run: npm run lint -w ${{ env.WORKSPACE_NAME }}
+      - run: npm run build -w shared
+      - run: npm run build -w ${{ env.WORKSPACE_NAME }}
+      - run: npm run test -w ${{ env.WORKSPACE_NAME }}

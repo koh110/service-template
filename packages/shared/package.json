@@ -18,7 +18,10 @@
     "db-migrate:deploy": "prisma migrate deploy",
     "format-db": "prisma format",
     "preformat": "npm run format-tsp && npm run format-db",
-    "format": "biome format --write src"
+    "format": "biome format --write src",
+    "lint": "biome check ./src",
+    "lint-fix": "biome check --write ./src",
+    "test": ""
   },
   "devDependencies": {
     "@typespec/compiler": "^1.4.0",

@@ -15,3 +15,11 @@ export const CORS_OPTIONS: CORS_OPTIONS = {
     ? process.env.CORS_ORIGIN.split(',').map((e) => e.trim())
     : ['http://localhost:3000']
 } as const
+
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL is not defined')
+}
+
+export const DATABASE = {
+  url: process.env.DATABASE_URL
+} as const

@@ -1,0 +1,20 @@
+name: app_name
+services:
+  db:
+    container_name: app_db
+    image: postgres:17
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: "username"
+      POSTGRES_PASSWORD: "randompassword"
+      POSTGRES_DB: "dbname"
+  test-db:
+    container_name: test_db
+    image: postgres:17
+    ports:
+      - 5433:5432
+    environment:
+      POSTGRES_USER: "test_username"
+      POSTGRES_PASSWORD: "test_randompassword"
+      POSTGRES_DB: "test_db"

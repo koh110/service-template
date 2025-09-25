@@ -23,3 +23,8 @@
 - build
   1. npm run build -w shared
   2. npm run build -w api
+
+### shared
+
+- migration local
+  - npm run db-migrate -w shared

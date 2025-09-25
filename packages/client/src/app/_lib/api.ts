@@ -74,12 +74,12 @@ export async function client<
 
   const res = await fetch(url, init)
   let body = await res.text()
+  const contentType = res.headers.get('Content-Type')
   if (
     body.length > 0 &&
     init.headers &&
-    'Content-Type' in res.headers &&
-    typeof res.headers['Content-Type'] === 'string' &&
-    res.headers['Content-Type'].includes('application/json')
+    typeof contentType === 'string' &&
+    contentType.includes('application/json')
   ) {
     body = JSON.parse(body)
   }

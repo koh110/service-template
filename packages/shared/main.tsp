@@ -1,5 +1,6 @@
 import "@typespec/http";
 import "@typespec/openapi";
+import "./typespec/user.tsp";
 
 using Http;
 

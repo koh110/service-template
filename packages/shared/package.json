@@ -1,0 +1,44 @@
+{
+  "private": true,
+  "type": "module",
+  "name": "shared",
+  "exports": {
+    "./src/*": "./dist/src/*.js"
+  },
+  "scripts": {
+    "compile": "tsp compile .",
+    "format-tsp": "tsp format \"**/*.tsp\"",
+    "preopenapi-ts": "npm run compile",
+    "openapi-ts": "openapi-typescript ./tsp-output/schema/openapi.yaml --output ./src/generated/schema.ts",
+    "prebuild": "concurrently \"npm run openapi-ts\" \"npm run db-generate\"",
+    "build": "tsc --build tsconfig.json",
+    "postbuild": "node bin/postbuild.ts",
+    "db-generate": "prisma generate",
+    "db-migrate": "prisma migrate dev",
+    "db-migrate:deploy": "prisma migrate deploy",
+    "format-db": "prisma format",
+    "preformat": "npm run format-tsp && npm run format-db",
+    "format": "biome format --write src",
+    "lint": "biome check ./src",
+    "lint-fix": "biome check --write ./src",
+    "test": ""
+  },
+  "devDependencies": {
+    "@typespec/compiler": "^1.4.0",
+    "@typespec/http": "^1.4.0",
+    "@typespec/openapi": "^1.4.0",
+    "@typespec/openapi3": "^1.4.0",
+    "@typespec/rest": "^0.74.0",
+    "concurrently": "^9.2.1",
+    "openapi-typescript": "^7.9.1",
+    "prisma": "^6.16.2",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.2"
+  },
+  "optionalDependencies": {
+    "@esbuild/linux-x64": "*",
+    "@rollup/rollup-linux-x64-gnu": "*"
+  }
+}

@@ -1,0 +1,65 @@
+name: CI api
+
+on:
+  push:
+    paths:
+      - 'packages/api/**'
+      - 'package.json'
+    branches: [ main ]
+  pull_request:
+    paths:
+      - '.github/workflows/ci-api.yml'
+      - 'packages/shared/**'
+      - 'packages/api/**'
+      - 'package.json'
+    branches: [ main ]
+
+env:
+  WORKSPACE_NAME: api
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+      - run: npm ci
+      - run: npm run lint -w ${{ env.WORKSPACE_NAME }}
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shard: [1, 2]
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_app
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+      - run: npm ci
+      - run: npm run build -w shared
+      - run: npm run build -w ${{ env.WORKSPACE_NAME }}
+      - run: npm run test-ci -w ${{ env.WORKSPACE_NAME }} -- --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+        env:
+          TEST_DB_HOST: localhost
+          TEST_DB_USER: postgres
+          TEST_DB_PASSWORD: test_password
+          TEST_DB_PORT: 5432
+          TEST_DB_ROOT_DATABASE_NAME: test_app

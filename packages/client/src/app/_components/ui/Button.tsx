@@ -1,5 +1,5 @@
-import type { ComponentProps } from 'react'
 import { Button as RadixButton } from '@radix-ui/themes'
+import type { ComponentProps } from 'react'
 
 export function Button({
   children,

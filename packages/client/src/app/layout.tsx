@@ -1,5 +1,5 @@
-import type { Metadata } from 'next'
 import { Theme } from '@radix-ui/themes'
+import type { Metadata } from 'next'
 import '@radix-ui/themes/styles.css'
 import './globals.css'
 import { APP_NAME } from '../constants'

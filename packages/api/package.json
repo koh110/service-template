@@ -6,22 +6,23 @@
     "build": "tsc --build tsconfig.json",
     "predev": "npm run build",
     "dev": "node --env-file=.env --watch dist/src/index.js",
-    "format": "biome format --write src test",
-    "lint": "biome check ./src",
-    "lint-fix": "biome check --write ./src",
+    "format": "biome format --write",
+    "lint": "biome check",
+    "lint-fix": "biome check --write",
     "tsc": "tsc --build tsconfig.test.json",
     "vitest": "vitest run --config=./vitest.config.ts",
     "test": "concurrently \"npm run tsc\" \"npm run vitest\"",
-    "test-ci": "vitest run --config=./vitest.config.ts --poolOptions.threads.maxThreads=1 --maxWorkers=1 --minWorkers=1"
+    "test-ci": "vitest run --config=./vitest.config.ts --maxWorkers=1"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.3",
+    "@prisma/adapter-pg": "^7.0.0",
     "hono": "^4.9.8",
     "zod": "^4.1.11"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
     "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.13"
   }
 }

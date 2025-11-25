@@ -1,5 +1,5 @@
 generator client {
-  provider        = "prisma-client-js"
+  provider        = "prisma-client"
   output          = "../src/generated/prisma"
   previewFeatures = ["typedSql"]
   binaryTargets   = ["native"]
@@ -7,7 +7,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model user {

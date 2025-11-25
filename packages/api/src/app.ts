@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { schema } from 'shared/src/index'
+import type { schema } from 'shared/src/index'
 import * as user from './handlers/user/index.js'
 import { createClient } from './lib/database.js'
 

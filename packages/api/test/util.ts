@@ -1,4 +1,5 @@
-import { PrismaClient, Prisma } from 'shared/src/index'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { type Prisma, PrismaClient } from 'shared/src/index'
 
 export function getTestDbName(suffix: string) {
   return `test_${suffix}`
@@ -28,9 +29,8 @@ export function getTestDbParameters(env: NodeJS.ProcessEnv) {
 export function getTestDbClient(env: NodeJS.ProcessEnv) {
   const { user, password, host, port, testDbName } = getTestDbParameters(env)
   const databaseUrl = `postgresql://${user}:${password}@${host}:${port}/${testDbName}`
-  return new PrismaClient({
-    datasourceUrl: databaseUrl
-  })
+  const adapter = new PrismaPg({ connectionString: databaseUrl })
+  return new PrismaClient({ adapter })
 }
 
 export async function truncateTables(

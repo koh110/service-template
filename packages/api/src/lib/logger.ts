@@ -19,9 +19,11 @@ export const logger = {
       level: 'INFO'
     }
     if (ENV.local) {
+      // biome-ignore lint/suspicious/noConsole: logger
       console.dir(json, { depth: null })
       return
     }
+    // biome-ignore lint/suspicious/noConsole: logger
     console.log(JSON.stringify(json))
   },
   error: (options: ErrorOptions) => {
@@ -30,9 +32,11 @@ export const logger = {
       level: 'ERROR'
     }
     if (ENV.local) {
+      // biome-ignore lint/suspicious/noConsole: logger
       console.dir(json, { depth: null })
       return
     }
+    // biome-ignore lint/suspicious/noConsole: logger
     console.error(JSON.stringify(json))
   },
   debug: (options: Options) => {
@@ -41,6 +45,7 @@ export const logger = {
         ...options,
         level: 'DEBUG'
       }
+      // biome-ignore lint/suspicious/noConsole: logger
       console.dir(json, { depth: null })
     }
   }

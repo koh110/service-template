@@ -1,13 +1,12 @@
 'use server'
 import 'server-only'
-import { Result } from 'shared/src/index'
 import { API_URI } from '../config.server'
-import { client } from './_lib/api'
+import { type APIResult, client } from './_lib/api'
 import { logger } from './_lib/logger'
 
-export async function fetchUserList(): Promise<
-  Result<Awaited<ReturnType<typeof client<'/api/user', 'get'>>>['body']>
-> {
+type FetchUserListResponse = APIResult<'/api/user', 'get', 200>
+
+export async function fetchUserList() {
   try {
     const res = await client(`${API_URI}/api/user`, {
       path: '/api/user',
@@ -19,9 +18,21 @@ export async function fetchUserList(): Promise<
         }
       }
     })
-    return { ok: true, ...res }
+    if (res.status === 200) {
+      return { ok: true, ...res } as const satisfies FetchUserListResponse
+    }
+    logger.debug({
+      label: 'fetchUserList',
+      body: 'unexpected status',
+      meta: { status: res.status }
+    })
+    return { ok: false, ...res } as const satisfies FetchUserListResponse
   } catch (e) {
     logger.error({ label: 'fetchUserList', body: 'error', error: e })
-    return { ok: false, status: 500, body: 'fetch error' }
+    return {
+      ok: false,
+      status: 500,
+      body: 'fetch error'
+    } as const satisfies FetchUserListResponse
   }
 }

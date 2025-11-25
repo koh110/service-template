@@ -1,7 +1,7 @@
 import { HTTPException } from 'hono/http-exception'
 import type { schema } from 'shared/src/index'
 import { z } from 'zod'
-import { type createClient } from '../../../lib/database.js'
+import type { createClient } from '../../../lib/database.js'
 
 type UpdateUserApi = schema.paths['/api/user/{id}']['put']
 type UpdateUserResponse = UpdateUserApi['responses']

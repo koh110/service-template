@@ -1,5 +1,5 @@
-import path from 'node:path'
 import { cp } from 'node:fs/promises'
+import path from 'node:path'
 
 async function main() {
   const src = path.resolve(import.meta.dirname, '../src/generated/prisma')

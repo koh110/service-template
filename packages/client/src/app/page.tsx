@@ -1,7 +1,9 @@
+import { logger } from './_lib/logger'
 import { fetchUserList } from './actions'
 
 export default async function Page() {
   const user = await fetchUserList()
+  logger.debug({ label: 'Top', body: 'render', meta: { user } })
 
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen gap-16">

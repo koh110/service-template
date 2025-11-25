@@ -28,7 +28,7 @@
     "@typespec/http": "^1.4.0",
     "@typespec/openapi": "^1.4.0",
     "@typespec/openapi3": "^1.4.0",
-    "@typespec/rest": "^0.74.0",
+    "@typespec/rest": "^0.76.0",
     "concurrently": "^9.2.1",
     "openapi-typescript": "^7.9.1",
     "prisma": "^7.0.0",

@@ -21,11 +21,11 @@ export async function setup({ config }: TestProject) {
   const adapter = new PrismaPg({ connectionString: ROOT_TEST_DATABASE_URL })
   const rootClient = new PrismaClient({ adapter })
 
-  const maxPool = config.poolOptions?.threads?.maxThreads ?? 1
-  console.log('[setup] maxPool:', maxPool)
+  const maxWorkers = config?.maxWorkers ?? 1
+  console.log('[setup] maxWorkers:', maxWorkers)
 
   const promises: ReturnType<typeof runMigrate>[] = []
-  for (let i = 1; i <= maxPool; i++) {
+  for (let i = 1; i <= maxWorkers; i++) {
     const databaseName = getTestDbName(`${i}`)
     promises.push(
       runMigrate({

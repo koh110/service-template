@@ -6,10 +6,6 @@ export default defineConfig({
     exclude: [...configDefaults.exclude, '**/dist/**'],
     globalSetup: [path.resolve('./test/globalSetup.ts')],
     setupFiles: [path.resolve('./test/setup.ts')],
-    poolOptions: {
-      threads: {
-        maxThreads: 8
-      }
-    }
+    maxWorkers: 8
   }
 })

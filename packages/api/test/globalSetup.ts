@@ -1,8 +1,9 @@
-import type { TestProject } from 'vitest/node'
 import { exec } from 'node:child_process'
 import path from 'node:path'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from 'shared/src/index'
-import { getTestDbParameters, getTestDbName } from './util.js'
+import type { TestProject } from 'vitest/node'
+import { getTestDbName, getTestDbParameters } from './util.js'
 
 export async function setup({ config }: TestProject) {
   if (process.env.NODE_ENV !== 'test') {
@@ -17,9 +18,8 @@ export async function setup({ config }: TestProject) {
 
   const ROOT_TEST_DATABASE_URL = `${testDbUrl}/${rootTestDatabaseName}`
   console.log('[setup] rootTestDatabaseUrl:', ROOT_TEST_DATABASE_URL)
-  const rootClient = new PrismaClient({
-    datasourceUrl: ROOT_TEST_DATABASE_URL
-  })
+  const adapter = new PrismaPg({ connectionString: ROOT_TEST_DATABASE_URL })
+  const rootClient = new PrismaClient({ adapter })
 
   const maxPool = config.poolOptions?.threads?.maxThreads ?? 1
   console.log('[setup] maxPool:', maxPool)

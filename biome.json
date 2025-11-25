@@ -3,22 +3,44 @@
 	"vcs": {
 		"useIgnoreFile": true
 	},
-	"formatter": {
-		"enabled": true,
-		"indentStyle": "space",
+	"files": {
 		"includes": [
 			"packages/**/*",
 			"!node_modules/**/*",
-			"!dist/**/*",
-			"!build/**/*",
-			"!**/src/generated/**/*"
+			"!**/dist/**/*",
+			"!**/build/**/*",
+			"!**/src/generated/**/*",
+			"!**/.next/**/*"
 		]
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "space"
 	},
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "single",
 			"trailingCommas": "none",
 			"semicolons": "asNeeded"
+		}
+	},
+	"linter": {
+		"includes": [
+			"packages/**/*",
+			"!**/*.test.ts",
+			"!node_modules/**/*",
+			"!**/dist/**/*",
+			"!**/build/**/*",
+			"!**/src/generated/**/*",
+			"!**/.next/**/*"
+		],
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"suspicious": {
+				"noExplicitAny": "warn",
+				"noConsole": "error"
+			}
 		}
 	},
 	"overrides": [
@@ -29,18 +51,16 @@
 					"lineWidth": 120
 				}
 			}
-		}
-	],
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"recommended": true,
-			"suspicious": {
-				"noExplicitAny": "warn"
-			}
 		},
-		"includes": [
-			"!*.test.ts"
-		]
-	}
+		{
+			"includes": ["**/test/*.ts"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noConsole": "off"
+					}
+				}
+			}
+		}
+	]
 }

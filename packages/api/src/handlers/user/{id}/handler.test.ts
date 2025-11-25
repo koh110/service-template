@@ -14,7 +14,7 @@ beforeAll(async () => {
   }
 })
 
-const userSeedArgs = Prisma.validator<Prisma.userDefaultArgs>()({})
+const userSeedArgs = {} satisfies Prisma.userDefaultArgs
 const test = baseTest.extend<{
   seeds: {
     count: number

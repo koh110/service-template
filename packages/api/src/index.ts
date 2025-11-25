@@ -14,11 +14,16 @@ async function main() {
       port: PORT
     },
     (info) => {
-      console.log(`Server is running on http://localhost:${info.port}`)
+      logger.log({
+        label: 'server started',
+        body: `Server is running on http://localhost:${info.port}`
+      })
     }
   )
 }
-main().catch(console.error)
+main().catch((e) => {
+  logger.error({ label: 'server error', body: 'error', error: e })
+})
 
 // graceful shutdown
 if (ENV.production) {

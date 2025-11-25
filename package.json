@@ -5,9 +5,10 @@
   ],
   "scripts": {
     "lint": "npm run lint --workspaces --if-present",
-    "format": "npm run format --workspaces --if-present"
+    "format": "npm run format --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
   },
   "dependencies": {
-    "@biomejs/biome": "^2.2.4"
+    "@biomejs/biome": "^2.3.7"
   }
 }

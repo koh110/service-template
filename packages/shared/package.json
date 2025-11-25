@@ -18,9 +18,9 @@
     "db-migrate:deploy": "prisma migrate deploy",
     "format-db": "prisma format",
     "preformat": "npm run format-tsp && npm run format-db",
-    "format": "biome format --write src",
-    "lint": "biome check ./src",
-    "lint-fix": "biome check --write ./src",
+    "format": "biome format --write",
+    "lint": "biome check",
+    "lint-fix": "biome check --write",
     "test": ""
   },
   "devDependencies": {
@@ -31,11 +31,11 @@
     "@typespec/rest": "^0.74.0",
     "concurrently": "^9.2.1",
     "openapi-typescript": "^7.9.1",
-    "prisma": "^6.16.2",
+    "prisma": "^7.0.0",
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@prisma/client": "^6.16.2"
+    "@prisma/client": "^7.0.0"
   },
   "optionalDependencies": {
     "@esbuild/linux-x64": "*",

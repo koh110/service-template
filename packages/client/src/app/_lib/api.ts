@@ -1,4 +1,9 @@
 import type * as schema from 'shared/src/generated/schema'
+import type { Result } from 'shared/src/index'
+
+type Prettify<T> = {
+  [K in keyof T]: T[K]
+} & {}
 
 type StatusNumKeys<R> = Extract<keyof R, number>
 type TypedResponse<R> = {
@@ -13,6 +18,12 @@ type TypedResponse<R> = {
         : unknown
   }
 }[StatusNumKeys<R>]
+
+type HttpStatus = 200 | 201 | 400 | 401 | 403 | 500
+
+export type ClientResponse<R> =
+  | TypedResponse<R>
+  | { status: Exclude<HttpStatus, StatusNumKeys<R>>; body: string }
 
 type HttpMethod =
   | 'get'
@@ -34,15 +45,22 @@ export async function client<
   K extends HttpMethod
 >(
   url: string,
-  options: OptionsFor<T, K>
+  options: OptionsFor<T, K>,
+  _init?: { next?: RequestInit['next'] } & RequestInit
 ): Promise<
-  TypedResponse<schema.paths[T][K] extends { responses: infer R } ? R : never>
+  Prettify<
+    ClientResponse<
+      schema.paths[T][K] extends { responses: infer R } ? R : never
+    >
+  >
 > {
   const _options = options
   const init: Parameters<typeof fetch>[1] = {
+    ..._init,
     method: _options.method,
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      ...(_init?.headers ?? {})
     }
   }
 
@@ -52,7 +70,9 @@ export async function client<
     return (
       'parameters' in o &&
       o.parameters !== null &&
+      // biome-ignore lint/suspicious/noExplicitAny: fetch options
       typeof (o as any).parameters === 'object' &&
+      // biome-ignore lint/suspicious/noExplicitAny: fetch options
       'header' in (o as any).parameters
     )
   }
@@ -89,7 +109,7 @@ export async function client<
   return {
     status: res.status,
     body
-  } as TypedResponse<Res>
+  } as Prettify<ClientResponse<Res>>
 }
 
 export function createFetchOptions<
@@ -110,3 +130,25 @@ export function createFetchOptions<
 ) {
   return options
 }
+
+type APIResultBase<
+  T extends keyof schema.paths,
+  K extends HttpMethod,
+  SuccessStatus extends number,
+  APIResponse extends { status: number; body: unknown } = Awaited<
+    ReturnType<typeof client<T, K>>
+  >
+> = Result<
+  Extract<APIResponse, { status: SuccessStatus }>['body'],
+  | Extract<
+      APIResponse,
+      { status: Exclude<APIResponse['status'], SuccessStatus>; body: unknown }
+    >['body']
+  | string
+>
+
+export type APIResult<
+  T extends keyof schema.paths,
+  K extends HttpMethod,
+  SuccessStatus extends number
+> = APIResultBase<T, K, SuccessStatus>

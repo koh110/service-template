@@ -1,7 +1,7 @@
 type CreateRouteOption<PathKey extends string, Params = undefined> = {
   type: PathKey
 } & (Params extends undefined
-  ? {}
+  ? Record<never, never>
   : {
       params: Params
     })
@@ -18,6 +18,7 @@ export function getRoute(option: RouteOption): { path: string } {
   if (type === 'login') {
     return { path: '/login' }
   }
+  // biome-ignore lint/correctness/noUnusedVariables: unreachable check
   const unreachable: never = type
   return { path: '' }
 }

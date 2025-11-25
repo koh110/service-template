@@ -1,7 +1,6 @@
 name: app_name
 services:
   db:
-    container_name: app_db
     image: postgres:17
     ports:
       - 5432:5432
@@ -10,7 +9,6 @@ services:
       POSTGRES_PASSWORD: "randompassword"
       POSTGRES_DB: "dbname"
   test-db:
-    container_name: test_db
     image: postgres:17
     ports:
       - 5433:5432

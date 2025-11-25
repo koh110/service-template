@@ -6,9 +6,9 @@
     "build": "tsc --build tsconfig.json",
     "predev": "npm run build",
     "dev": "node --env-file=.env --watch dist/src/index.js",
-    "format": "biome format --write src test",
-    "lint": "biome check ./src",
-    "lint-fix": "biome check --write ./src",
+    "format": "biome format --write",
+    "lint": "biome check",
+    "lint-fix": "biome check --write",
     "tsc": "tsc --build tsconfig.test.json",
     "vitest": "vitest run --config=./vitest.config.ts",
     "test": "concurrently \"npm run tsc\" \"npm run vitest\"",
@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.3",
+    "@prisma/adapter-pg": "^7.0.0",
     "hono": "^4.9.8",
     "zod": "^4.1.11"
   },

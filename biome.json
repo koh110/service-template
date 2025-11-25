@@ -53,7 +53,10 @@
 			}
 		},
 		{
-			"includes": ["**/test/*.ts"],
+			"includes": [
+				"**/test/*.ts",
+				"**/bin/*.ts"
+			],
 			"linter": {
 				"rules": {
 					"suspicious": {

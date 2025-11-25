@@ -12,7 +12,7 @@
     "tsc": "tsc --build tsconfig.test.json",
     "vitest": "vitest run --config=./vitest.config.ts",
     "test": "concurrently \"npm run tsc\" \"npm run vitest\"",
-    "test-ci": "vitest run --config=./vitest.config.ts --poolOptions.threads.maxThreads=1 --maxWorkers=1 --minWorkers=1"
+    "test-ci": "vitest run --config=./vitest.config.ts --maxWorkers=1"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.3",

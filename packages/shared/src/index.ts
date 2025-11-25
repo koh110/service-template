@@ -1,4 +1,4 @@
-export { PrismaClient, Prisma } from './generated/prisma/client.js'
+export { Prisma, PrismaClient } from './generated/prisma/client.js'
 export * as schema from './generated/schema.js'
 
 export type Prettify<T> = { [K in keyof T]: T[K] } & {}

@@ -24,13 +24,10 @@
 - 最新のバージョンに従った書き方をする
 - anyの利用を禁止する
 - interfaceよりtypeを優先して利用する
-
-## Guidelines
-
 - 推論できる型は推論を優先して採用し、再定義を禁じる
+- type assertion を避ける
 - interfaceは利用せずtypeを利用する
 - 可能な場合は必ず `as const` を記述する
-
 
 ### client
 

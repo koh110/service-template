@@ -4,6 +4,7 @@
 
 - use npm workspaces
 - at first, run `npm install` & `npm run init-local -w bin` at the root directory
+- O(N) となる処理を避け、O(1) となるように処理を記述する
 
 ## JavaScript Guiedelines
 

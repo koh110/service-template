@@ -1,4 +1,4 @@
-name: CI peopleforward-shared
+name: CI shared
 
 on:
   push:

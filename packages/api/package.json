@@ -15,14 +15,15 @@
     "test-ci": "vitest run --config=./vitest.config.ts --maxWorkers=1"
   },
   "dependencies": {
-    "@hono/node-server": "^1.19.3",
-    "@prisma/adapter-pg": "^7.0.0",
-    "hono": "^4.9.8",
-    "zod": "^4.1.11"
+    "@hono/node-server": "^1.19.8",
+    "@prisma/adapter-pg": "^7.2.0",
+    "hono": "^4.11.3",
+    "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@types/node": "^25.0.6",
     "concurrently": "^9.2.1",
     "typescript": "^5.9.2",
-    "vitest": "^4.0.13"
+    "vitest": "^4.0.16"
   }
 }

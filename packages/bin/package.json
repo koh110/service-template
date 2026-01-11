@@ -3,11 +3,12 @@
   "name": "bin",
   "type": "module",
   "scripts": {
+    "test": "",
     "format": "biome format --write src",
     "init-local": "node ./src/index.ts init-local"
   },
   "devDependencies": {
-    "@types/node": "^24.3.0",
+    "@types/node": "^25.0.6",
     "typescript": "^5.9.2"
   }
 }

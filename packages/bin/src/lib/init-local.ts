@@ -1,45 +1,20 @@
-import path from 'node:path'
+import cp from 'node:child_process'
 import fs from 'node:fs/promises'
-import { parseEnv } from 'node:util'
+import path from 'node:path'
+import { promisify } from 'node:util'
+
+const execAsync = promisify(cp.exec)
 
 export async function initLocal() {
-  console.log('Initializing local environment...')
-  await Promise.all([initApi(), initClient(), initShared()])
+  // docker compose のproject nameをdynamicに設定するための.envを作成
+  const targetPath = path.resolve(import.meta.dirname, '../../../../.env')
+  const gitBranchName = await execAsync('git rev-parse --abbrev-ref HEAD')
+  const dockerProjectName = `project-template-${gitBranchName.stdout.trim()}`
+
+  const env = {
+    COMPOSE_PROJECT_NAME: dockerProjectName
+  }
+  const envStrs = Object.entries(env).map(([key, value]) => `${key}=${value}`)
+  await fs.writeFile(targetPath, envStrs.join('\n'), 'utf-8')
   console.log('Local environment initialized successfully.')
-}
-
-async function initApi() {
-  console.log('setup api...')
-  const targetPath = path.resolve(import.meta.dirname, '../../../api')
-  const envSample = await fs.readFile(path.resolve(targetPath, '.env.sample'), 'utf-8')
-  const env = {
-    ...parseEnv(envSample)
-  }
-  const envStrs = Object.entries(env).map(([key, value]) => `${key}=${value}`)
-  await fs.writeFile(path.resolve(targetPath, '.env'), envStrs.join('\n'), 'utf-8')
-  console.log('complete setup api...')
-}
-
-async function initClient() {
-  console.log('setup client...')
-  const targetPath = path.resolve(import.meta.dirname, '../../../client')
-  const envSample = await fs.readFile(path.resolve(targetPath, '.env.local.sample'), 'utf-8')
-  const env = {
-    ...parseEnv(envSample)
-  }
-  const envStrs = Object.entries(env).map(([key, value]) => `${key}=${value}`)
-  await fs.writeFile(path.resolve(targetPath, '.env.local'), envStrs.join('\n'), 'utf-8')
-  console.log('complete setup client...')
-}
-
-async function initShared() {
-  console.log('setup shared...')
-  const targetPath = path.resolve(import.meta.dirname, '../../../shared')
-  const envSample = await fs.readFile(path.resolve(targetPath, '.env.sample'), 'utf-8')
-  const env = {
-    ...parseEnv(envSample)
-  }
-  const envStrs = Object.entries(env).map(([key, value]) => `${key}=${value}`)
-  await fs.writeFile(path.resolve(targetPath, '.env'), envStrs.join('\n'), 'utf-8')
-  console.log('complete setup shared...')
 }

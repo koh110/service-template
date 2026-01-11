@@ -14,7 +14,7 @@
     "build": "tsc --build tsconfig.json",
     "postbuild": "node bin/postbuild.ts",
     "db-generate": "prisma generate",
-    "db-migrate": "prisma migrate dev",
+    "db-migrate": "./bin/env.sh prisma migrate dev",
     "db-migrate:deploy": "prisma migrate deploy",
     "format-db": "prisma format",
     "preformat": "npm run format-tsp && npm run format-db",
@@ -24,21 +24,21 @@
     "test": ""
   },
   "devDependencies": {
-    "@typespec/compiler": "^1.4.0",
-    "@typespec/http": "^1.4.0",
-    "@typespec/openapi": "^1.4.0",
-    "@typespec/openapi3": "^1.4.0",
-    "@typespec/rest": "^0.76.0",
+    "@types/node": "^25.0.6",
+    "@typespec/compiler": "^1.7.1",
+    "@typespec/http": "^1.7.0",
+    "@typespec/openapi": "^1.7.0",
+    "@typespec/openapi3": "^1.7.0",
+    "@typespec/rest": "^0.77.0",
     "concurrently": "^9.2.1",
     "openapi-typescript": "^7.9.1",
-    "prisma": "^7.0.0",
+    "prisma": "^7.2.0",
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@prisma/client": "^7.0.0"
+    "@prisma/client": "^7.2.0"
   },
   "optionalDependencies": {
-    "@esbuild/linux-x64": "*",
-    "@rollup/rollup-linux-x64-gnu": "*"
+    "@rollup/rollup-linux-x64-gnu": "^4.55.1"
   }
 }

@@ -18,6 +18,18 @@ async function main() {
         label: 'server started',
         body: `Server is running on http://localhost:${info.port}`
       })
+      if (ENV.local) {
+        ;(async () => {
+          const [path, fs] = await Promise.all([
+            import('node:path'),
+            import('node:fs')
+          ])
+
+          const portFile = path.resolve(import.meta.dirname, '../.server-port')
+          await fs.promises.writeFile(portFile, String(info.port))
+          logger.log({ body: `output port file: ${portFile}` })
+        })()
+      }
     }
   )
 }

@@ -10,7 +10,7 @@
     "skipLibCheck": true,
     "noUncheckedIndexedAccess": true,
     "noEmit": true,
-    "allowImportingTsExtensions": true,
+    "allowImportingTsExtensions": true
   },
   "include": ["src"],
   "exclude": ["node_modules", "**/*.test.ts", "dist"]

@@ -8,7 +8,7 @@ export const ENV = {
   local: process.env.APP_ENV === 'local'
 } as const
 
-export const PORT = process.env.PORT ? Number(process.env.PORT) : 8000
+export const PORT = process.env.PORT ? Number(process.env.PORT) : 0
 
 export const CORS_OPTIONS: CORS_OPTIONS = {
   origin: process.env.CORS_ORIGIN

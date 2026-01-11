@@ -3,6 +3,10 @@
 ## dev
 
 ```bash
+# setup project
+$ npm run init-local -w bin
+# build shared lib
+$ npm run build -w shared
 # middleware
 $ docker compose up
 # api

@@ -3,10 +3,10 @@ import { test as baseTest, beforeAll, expect } from 'vitest'
 import { getTestDbClient, truncateTables } from '../../../test/util.js'
 import { listUser } from './handler.js'
 
-let dbClient: ReturnType<typeof getTestDbClient>
+let dbClient: Awaited<ReturnType<typeof getTestDbClient>>
 
 beforeAll(async () => {
-  dbClient = getTestDbClient(process.env)
+  dbClient = await getTestDbClient(process.env)
   await dbClient.$connect()
   await truncateTables(dbClient, [Prisma.ModelName.user])
   return async () => {

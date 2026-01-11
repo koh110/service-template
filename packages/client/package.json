@@ -3,7 +3,7 @@
   "name": "client",
   "version": "0.1.0",
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "./bin/env.sh next dev --turbopack",
     "tsc": "tsc --noEmit",
     "build": "next build --turbopack",
     "start": "next start",

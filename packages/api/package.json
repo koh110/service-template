@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc --build tsconfig.json",
     "predev": "npm run build",
-    "dev": "node --env-file=.env --watch dist/src/index.js",
+    "dev": "./bin/env.sh node --watch dist/src/index.js",
     "format": "biome format --write",
     "lint": "biome check",
     "lint-fix": "biome check --write",

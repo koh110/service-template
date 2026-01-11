@@ -3,7 +3,7 @@ services:
   db:
     image: postgres:17
     ports:
-      - 5432:5432
+      - 0:5432
     environment:
       POSTGRES_USER: "username"
       POSTGRES_PASSWORD: "randompassword"
@@ -11,7 +11,7 @@ services:
   test-db:
     image: postgres:17
     ports:
-      - 5433:5432
+      - 0:5432
     environment:
       POSTGRES_USER: "test_username"
       POSTGRES_PASSWORD: "test_randompassword"

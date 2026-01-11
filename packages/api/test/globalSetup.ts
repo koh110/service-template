@@ -12,7 +12,7 @@ export async function setup({ config }: TestProject) {
 
   process.env.DATABASE_URL = 'postgres://xxxx'
 
-  const { testDbUrl } = getTestDbParameters(process.env)
+  const { testDbUrl } = await getTestDbParameters(process.env)
   const rootTestDatabaseName =
     process.env.TEST_DB_ROOT_DATABASE_NAME ?? 'test_db'
 

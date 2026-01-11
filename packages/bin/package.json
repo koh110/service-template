@@ -3,9 +3,13 @@
   "name": "bin",
   "type": "module",
   "scripts": {
+    "init-local": "node ./src/index.ts init-local",
+    "env": "node --no-warnings=ExperimentalWarning ./src/index.ts env",
+    "docker-compose": "node --no-warnings=ExperimentalWarning ./src/index.ts docker-compose",
     "test": "",
-    "format": "biome format --write src",
-    "init-local": "node ./src/index.ts init-local"
+    "format": "biome format --write",
+    "lint": "biome check",
+    "lint-fix": "biome check --write"
   },
   "devDependencies": {
     "@types/node": "^25.0.6",

@@ -14,7 +14,7 @@
     "build": "tsc --build tsconfig.json",
     "postbuild": "node bin/postbuild.ts",
     "db-generate": "prisma generate",
-    "db-migrate": "prisma migrate dev",
+    "db-migrate": "./bin/env.sh prisma migrate dev",
     "db-migrate:deploy": "prisma migrate deploy",
     "format-db": "prisma format",
     "preformat": "npm run format-tsp && npm run format-db",

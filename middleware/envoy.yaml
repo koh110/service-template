@@ -22,6 +22,7 @@ static_resources:
                             prefix: "/"
                           route:
                             cluster: api_service
+                            # Retry on connection failures and 5xx errors for API restart resilience
                             retry_policy:
                               retry_on: "connect-failure,reset,refused-stream,5xx"
                               num_retries: 3

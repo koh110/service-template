@@ -19,6 +19,16 @@ export async function dockerCompose(command: string | undefined) {
 
 export async function fetchDbPort() {
   const res = await dockerCompose('port db 5432')
-  const port = res.stdout.trim().split(':')[1]
-  return port
+  return extractPort(res.stdout)
+}
+
+export async function fetchEnvoyPort() {
+  const res = await dockerCompose('port envoy 8000')
+  return extractPort(res.stdout)
+}
+
+function extractPort(output: string) {
+  const trimmed = output.trim()
+  const segments = trimmed.split(':')
+  return segments[segments.length - 1] ?? ''
 }

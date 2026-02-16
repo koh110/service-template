@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { parseArgs, parseEnv } from 'node:util'
-import { fetchDbPort } from './docker-compose.ts'
+import { fetchDbPort, fetchEnvoyPort } from './docker-compose.ts'
 
 const PACKAGES = ['api', 'client', 'shared'] as const
 
@@ -45,13 +45,6 @@ export async function developmentEnv(_packageName: string | undefined) {
       await shared(overrideEnv)
       break
   }
-}
-
-async function fetchApiPort() {
-  const targetDir = path.resolve(import.meta.dirname, '../../../api/dist')
-  const portFile = path.resolve(targetDir, '.server-port')
-  const portStr = await fs.readFile(portFile, 'utf-8')
-  return portStr.trim()
 }
 
 async function api(overrideEnv: Record<string, string>) {
@@ -108,9 +101,11 @@ async function client(overrideEnv: Record<string, string>) {
   const envFilePath = path.resolve(targetDir, '.env.local.sample')
   const envSample = await fs.readFile(envFilePath, 'utf-8')
   const parsedEnv = parseEnv(envSample)
-
-  const [apiPort] = await Promise.all([fetchApiPort()])
-  const API_URI = `http://localhost:${apiPort}`
+  const [envoyPort] = await Promise.all([fetchEnvoyPort()])
+  if (!envoyPort) {
+    throw new Error('Failed to fetch Envoy port.')
+  }
+  const API_URI = `http://localhost:${envoyPort}`
 
   const env = {
     ...parsedEnv,

@@ -16,3 +16,12 @@ services:
       POSTGRES_USER: "test_username"
       POSTGRES_PASSWORD: "test_randompassword"
       POSTGRES_DB: "test_db"
+  envoy:
+    image: envoyproxy/envoy:v1.33.2
+    ports:
+      - 0:8000
+      - 0:9901
+    volumes:
+      - ./middleware/envoy.yaml:/etc/envoy/envoy.yaml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

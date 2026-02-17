@@ -1,0 +1,22 @@
+node:
+  id: local
+  cluster: local
+
+dynamic_resources:
+  cds_config:
+    path_config_source:
+      path: /etc/envoy/cds.yaml
+      watched_directory:
+        path: /etc/envoy
+  lds_config:
+    path_config_source:
+      path: /etc/envoy/lds.yaml
+      watched_directory:
+        path: /etc/envoy
+
+admin:
+  access_log_path: /tmp/admin_access.log
+  address:
+    socket_address:
+      address: 0.0.0.0
+      port_value: 9901

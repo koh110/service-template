@@ -64,9 +64,12 @@ async function api(overrideEnv: Record<string, string>) {
     parsedEnv.DATABASE_URL = dbUrl.toString()
   }
 
+  const LOCAL_ENVOY_CONFIG_DIR = path.resolve(import.meta.dirname, '../../../../middleware/envoy')
+
   const env = {
     ...parsedEnv,
-    ...overrideEnv
+    LOCAL_ENVOY_CONFIG_DIR,
+    ...overrideEnv,
   } as const satisfies NodeJS.Dict<string>
 
   writeEnvToStdout(env)

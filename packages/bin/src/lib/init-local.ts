@@ -9,7 +9,8 @@ export async function initLocal() {
   // docker compose のproject nameをdynamicに設定するための.envを作成
   const targetPath = path.resolve(import.meta.dirname, '../../../../.env')
   const gitBranchName = await execAsync('git rev-parse --abbrev-ref HEAD')
-  const dockerProjectName = `project-template-${gitBranchName.stdout.trim()}`
+  const replaced = gitBranchName.stdout.trim().replace(/\//g, '-')
+  const dockerProjectName = `project-template-${replaced}`
 
   const env = {
     COMPOSE_PROJECT_NAME: dockerProjectName

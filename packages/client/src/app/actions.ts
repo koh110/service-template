@@ -8,7 +8,8 @@ type FetchUserListResponse = APIResult<'/api/user', 'get', 200>
 
 export async function fetchUserList() {
   try {
-    const res = await client(`${API_URI}/api/user`, {
+    const url = new URL('/api/user', API_URI)
+    const res = await client(url.toString(), {
       path: '/api/user',
       method: 'get',
       parameters: {
@@ -24,7 +25,7 @@ export async function fetchUserList() {
     logger.debug({
       label: 'fetchUserList',
       body: 'unexpected status',
-      meta: { status: res.status }
+      meta: { status: res.status, body: res.body, url: url.toString() }
     })
     return { ok: false, ...res } as const satisfies FetchUserListResponse
   } catch (e) {

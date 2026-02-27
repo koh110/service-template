@@ -4,9 +4,15 @@
     "packages/*"
   ],
   "scripts": {
+    "init": "npm run init-local -w bin",
     "lint": "npm run lint --workspaces --if-present",
     "format": "npm run format --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "predev:client": "npm run build -w shared",
+    "dev:client": "npm run dev -w client",
+    "predev:api": "npm run build -w shared",
+    "dev:api": "npm run dev -w api",
+    "middleware": "DOCKER_HOST_IP=$(hostname -I 2>/dev/null | awk '{print $1}') docker compose up"
   },
   "dependencies": {
     "@biomejs/biome": "^2.3.11"

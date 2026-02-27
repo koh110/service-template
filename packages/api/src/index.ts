@@ -11,7 +11,8 @@ async function main() {
   server = serve(
     {
       fetch: app.fetch,
-      port: PORT
+      port: PORT,
+      hostname: '0.0.0.0'
     },
     (info) => {
       logger.log({
@@ -19,15 +20,28 @@ async function main() {
         body: `Server is running on http://localhost:${info.port}`
       })
       if (ENV.local) {
+        const localProxyConfigDir = process.env.LOCAL_PROXY_CONFIG_DIR
+        if (!localProxyConfigDir) {
+          logger.error({
+            label: 'server error',
+            body: 'LOCAL_PROXY_CONFIG_DIR is not set in local environment'
+          })
+          return
+        }
         ;(async () => {
           const [path, fs] = await Promise.all([
             import('node:path'),
             import('node:fs')
           ])
-
-          const portFile = path.resolve(import.meta.dirname, '../.server-port')
-          await fs.promises.writeFile(portFile, String(info.port))
-          logger.log({ body: `output port file: ${portFile}` })
+          const proxyDir = path.resolve(localProxyConfigDir)
+          const apiFile = path.resolve(proxyDir, 'api.json')
+          const apiTmpFile = path.resolve(proxyDir, 'api.json.tmp')
+          const apiContent = JSON.stringify({ port: info.port })
+          await fs.promises.writeFile(apiTmpFile, apiContent, {
+            encoding: 'utf-8'
+          })
+          await fs.promises.rename(apiTmpFile, apiFile)
+          logger.log({ body: `output proxy api file: ${apiFile}` })
         })()
       }
     }

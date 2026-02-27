@@ -7,9 +7,9 @@
 $ npm run init-local -w bin
 # build shared lib
 $ npm run build -w shared
-# middleware
+# middleware (db + proxy)
 $ docker compose up
-# api
+# api (http://localhost:8001)
 $ npm run dev -w api
 # client
 $ npm run dev -w client

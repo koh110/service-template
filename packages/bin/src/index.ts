@@ -23,7 +23,7 @@ async function main() {
     const res = await dockerCompose(command.map((e) => e.trim()).join(' '))
     process.stdout.write(res.stdout)
     process.stderr.write(res.stderr)
-    return 
+    return
   }
 }
 main().catch(console.error)

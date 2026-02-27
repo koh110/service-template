@@ -16,13 +16,14 @@ services:
       POSTGRES_USER: "test_username"
       POSTGRES_PASSWORD: "test_randompassword"
       POSTGRES_DB: "test_db"
-  envoy:
-    image: envoyproxy/envoy:v1.34-latest
-    entrypoint: /etc/envoy/docker-entrypoint.sh
+  nginx:
+    build:
+      context: ./middleware/nginx
     ports:
       - 0:8000
-      - 0:9901
     volumes:
-      - ./middleware/envoy:/etc/envoy
+      - ./middleware/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./middleware/nginx/proxy.js:/etc/nginx/proxy.js:ro
+      - ./middleware/nginx/dynamic:/etc/nginx/dynamic
     extra_hosts:
       - "host.docker.internal:${DOCKER_HOST_IP:-host-gateway}"

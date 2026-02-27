@@ -22,8 +22,8 @@ export async function fetchDbPort() {
   return extractPort(res.stdout)
 }
 
-export async function fetchEnvoyPort() {
-  const res = await dockerCompose('port envoy 8000')
+export async function fetchProxyPort() {
+  const res = await dockerCompose('port nginx 8000')
   return extractPort(res.stdout)
 }
 

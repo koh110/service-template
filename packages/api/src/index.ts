@@ -11,7 +11,8 @@ async function main() {
   server = serve(
     {
       fetch: app.fetch,
-      port: PORT
+      port: PORT,
+      hostname: '0.0.0.0'
     },
     (info) => {
       logger.log({
@@ -19,11 +20,11 @@ async function main() {
         body: `Server is running on http://localhost:${info.port}`
       })
       if (ENV.local) {
-        const localEnvoyConfigDir = process.env.LOCAL_ENVOY_CONFIG_DIR
-        if (!localEnvoyConfigDir) {
+        const localProxyConfigDir = process.env.LOCAL_PROXY_CONFIG_DIR
+        if (!localProxyConfigDir) {
           logger.error({
             label: 'server error',
-            body: 'LOCAL_ENVOY_CONFIG_DIR is not set in local environment'
+            body: 'LOCAL_PROXY_CONFIG_DIR is not set in local environment'
           })
           return
         }
@@ -32,29 +33,15 @@ async function main() {
             import('node:path'),
             import('node:fs')
           ])
-          const envoyDir = path.resolve(localEnvoyConfigDir)
-          const cdsFile = path.resolve(envoyDir, 'cds.yaml')
-          const cdsTmpFile = path.resolve(envoyDir, 'cds.yaml.tmp')
-          const cdsContent = `version_info: "${Date.now()}"
-resources:
-  - "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
-    name: api_cluster
-    type: STRICT_DNS
-    dns_lookup_family: V4_ONLY
-    load_assignment:
-      cluster_name: api_cluster
-      endpoints:
-        - lb_endpoints:
-            - endpoint:
-                address:
-                  socket_address:
-                    address: host.docker.internal
-                    port_value: ${info.port}`
-          await fs.promises.writeFile(cdsTmpFile, cdsContent, {
+          const proxyDir = path.resolve(localProxyConfigDir)
+          const apiFile = path.resolve(proxyDir, 'api.json')
+          const apiTmpFile = path.resolve(proxyDir, 'api.json.tmp')
+          const apiContent = JSON.stringify({ port: info.port })
+          await fs.promises.writeFile(apiTmpFile, apiContent, {
             encoding: 'utf-8'
           })
-          await fs.promises.rename(cdsTmpFile, cdsFile)
-          logger.log({ body: `output envoy cds file: ${cdsFile}` })
+          await fs.promises.rename(apiTmpFile, apiFile)
+          logger.log({ body: `output proxy api file: ${apiFile}` })
         })()
       }
     }

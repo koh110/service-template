@@ -7,11 +7,11 @@
 $ npm run init-local -w bin
 # build shared lib
 $ npm run build -w shared
-# middleware (db + envoy proxy)
+# middleware (db + proxy)
 $ docker compose up
 # api (http://localhost:8001)
 $ npm run dev -w api
-# client (via Envoy)
+# client
 $ npm run dev -w client
 ```
 

@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { parseArgs, parseEnv } from 'node:util'
-import { fetchDbPort, fetchEnvoyPort } from './docker-compose.ts'
+import { fetchDbPort, fetchProxyPort } from './docker-compose.ts'
 
 const PACKAGES = ['api', 'client', 'shared'] as const
 
@@ -64,12 +64,15 @@ async function api(overrideEnv: Record<string, string>) {
     parsedEnv.DATABASE_URL = dbUrl.toString()
   }
 
-  const LOCAL_ENVOY_CONFIG_DIR = path.resolve(import.meta.dirname, '../../../../middleware/envoy')
+  const LOCAL_PROXY_CONFIG_DIR = path.resolve(
+    import.meta.dirname,
+    '../../../../middleware/nginx/dynamic'
+  )
 
   const env = {
     ...parsedEnv,
-    LOCAL_ENVOY_CONFIG_DIR,
-    ...overrideEnv,
+    LOCAL_PROXY_CONFIG_DIR,
+    ...overrideEnv
   } as const satisfies NodeJS.Dict<string>
 
   writeEnvToStdout(env)
@@ -104,11 +107,11 @@ async function client(overrideEnv: Record<string, string>) {
   const envFilePath = path.resolve(targetDir, '.env.local.sample')
   const envSample = await fs.readFile(envFilePath, 'utf-8')
   const parsedEnv = parseEnv(envSample)
-  const [envoyPort] = await Promise.all([fetchEnvoyPort()])
-  if (!envoyPort) {
-    throw new Error('Failed to fetch Envoy port.')
+  const [proxyPort] = await Promise.all([fetchProxyPort()])
+  if (!proxyPort) {
+    throw new Error('Failed to fetch proxy port.')
   }
-  const API_URI = `http://localhost:${envoyPort}`
+  const API_URI = `http://localhost:${proxyPort}`
 
   const env = {
     ...parsedEnv,

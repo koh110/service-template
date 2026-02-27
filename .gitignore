@@ -3,5 +3,4 @@ node_modules/
 .env.production
 npm-debug.log*
 .DS_Store
-middleware/envoy/cds.yaml
-middleware/envoy/cds.yaml.tmp
+middleware/nginx/dynamic/*.json

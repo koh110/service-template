@@ -1,9 +1,11 @@
 {
   "extends": "./tsconfig",
-  "exclude": ["node_modules"],
+  "include": ["src/**/*.ts", "bin/**/*.ts", "test/**/*.ts", "vite.config.ts"],
+  "exclude": ["dist", "node_modules"],
   "compilerOptions": {
     "noEmit": true,
-    "noImplicitThis": false
+    "noImplicitThis": false,
+    "types": ["node", "vitest"]
   },
   "references": [
     {

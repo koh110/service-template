@@ -6,13 +6,14 @@
     "build": "tsc --build tsconfig.json",
     "predev": "npm run build",
     "dev": "./bin/env.sh node --watch dist/src/index.js",
-    "format": "biome format --write",
-    "lint": "biome check",
-    "lint-fix": "biome check --write",
     "tsc": "tsc --build tsconfig.test.json",
-    "vitest": "vitest run --config=./vitest.config.ts",
+    "vitest": "vp test --config=./vite.config.ts",
     "test": "concurrently \"npm run tsc\" \"npm run vitest\"",
-    "test-ci": "vitest run --config=./vitest.config.ts --maxWorkers=1"
+    "test-ci": "vp test run --config=./vite.config.ts --maxWorkers=1",
+    "format": "vp fmt package.json src bin test --write",
+    "format-check": "vp fmt package.json src bin test --check",
+    "lint": "vp lint src bin test",
+    "lint-fix": "vp lint src bin test --fix"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.11",
@@ -23,7 +24,6 @@
   "devDependencies": {
     "@types/node": "^25.5.0",
     "concurrently": "^9.2.1",
-    "typescript": "^6.0.2",
-    "vitest": "^4.0.16"
+    "typescript": "^6.0.2"
   }
 }

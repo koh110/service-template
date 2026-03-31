@@ -52,7 +52,7 @@ async function api(overrideEnv: Record<string, string>) {
   const envFilePath = path.resolve(targetDir, '.env.sample')
   const envSample = await fs.readFile(envFilePath, 'utf-8')
   const parsedEnv = parseEnv(envSample)
-
+  // oxlint-disable-next-line no-single-promise-in-promise-methods
   const [dbPort] = await Promise.all([fetchDbPort()])
   if (!dbPort) {
     throw new Error('Failed to fetch database port.')
@@ -107,6 +107,7 @@ async function client(overrideEnv: Record<string, string>) {
   const envFilePath = path.resolve(targetDir, '.env.local.sample')
   const envSample = await fs.readFile(envFilePath, 'utf-8')
   const parsedEnv = parseEnv(envSample)
+  // oxlint-disable-next-line no-single-promise-in-promise-methods
   const [proxyPort] = await Promise.all([fetchProxyPort()])
   if (!proxyPort) {
     throw new Error('Failed to fetch proxy port.')

@@ -60,7 +60,7 @@ export async function client<
     method: _options.method,
     headers: {
       'Content-Type': 'application/json',
-      ...(_init?.headers ?? {})
+      ..._init?.headers
     }
   }
 
@@ -70,9 +70,7 @@ export async function client<
     return (
       'parameters' in o &&
       o.parameters !== null &&
-      // biome-ignore lint/suspicious/noExplicitAny: fetch options
       typeof (o as any).parameters === 'object' &&
-      // biome-ignore lint/suspicious/noExplicitAny: fetch options
       'header' in (o as any).parameters
     )
   }

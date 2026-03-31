@@ -15,6 +15,6 @@
     "middleware": "DOCKER_HOST_IP=$(hostname -I 2>/dev/null | awk '{print $1}') docker compose up"
   },
   "dependencies": {
-    "@biomejs/biome": "^2.3.11"
+    "vite-plus": "^0.1.13"
   }
 }

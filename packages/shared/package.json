@@ -17,11 +17,12 @@
     "db-migrate": "./bin/env.sh prisma migrate dev",
     "db-migrate:deploy": "prisma migrate deploy",
     "format-db": "prisma format",
+    "test": "",
     "preformat": "npm run format-tsp && npm run format-db",
-    "format": "biome format --write",
-    "lint": "biome check",
-    "lint-fix": "biome check --write",
-    "test": ""
+    "format": "vp fmt package.json src bin test --write",
+    "format-check": "vp fmt package.json src bin test --check",
+    "lint": "vp lint src bin test",
+    "lint-fix": "vp lint src bin test --fix"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

@@ -1,6 +1,8 @@
 node_modules/
 .env
-.env.production
+.env.*
 npm-debug.log*
+tsconfig.tsbuildinfo
+tsconfig.*.tsbuildinfo
 .DS_Store
 middleware/nginx/dynamic/*.json

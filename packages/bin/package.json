@@ -7,12 +7,13 @@
     "env": "node --no-warnings=ExperimentalWarning ./src/index.ts env",
     "docker-compose": "node --no-warnings=ExperimentalWarning ./src/index.ts docker-compose",
     "test": "",
-    "format": "biome format --write",
-    "lint": "biome check",
-    "lint-fix": "biome check --write"
+    "format": "vp fmt package.json src --write",
+    "format-check": "vp fmt package.json src --check",
+    "lint": "vp lint src",
+    "lint-fix": "vp lint src --fix"
   },
   "devDependencies": {
-    "@types/node": "^25.0.6",
-    "typescript": "^5.9.2"
+    "@types/node": "^25.5.0",
+    "typescript": "^6.0.2"
   }
 }

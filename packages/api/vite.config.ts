@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { configDefaults, defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vite-plus'
 
 export default defineConfig({
   test: {

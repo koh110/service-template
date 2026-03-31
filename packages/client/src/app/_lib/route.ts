@@ -18,7 +18,6 @@ export function getRoute(option: RouteOption): { path: string } {
   if (type === 'login') {
     return { path: '/login' }
   }
-  // biome-ignore lint/correctness/noUnusedVariables: unreachable check
-  const unreachable: never = type
+  const _: never = type
   return { path: '' }
 }

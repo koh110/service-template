@@ -4,6 +4,7 @@ import type { schema } from 'shared/src/index'
 import * as user from './handlers/user/index.js'
 import { createClient } from './lib/database.js'
 import { logger } from './lib/logger.js'
+import { corsMiddleware } from './lib/middleware.js'
 
 export async function createApp() {
   const dbClient = createClient()
@@ -19,6 +20,7 @@ export async function createApp() {
       })
     })
   )
+  app.use('/api/*', corsMiddleware)
 
   app.get('/', (c) => c.text('Hello'))
 

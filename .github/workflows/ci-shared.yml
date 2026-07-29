@@ -3,14 +3,14 @@ name: CI shared
 on:
   push:
     paths:
-      - 'aws/packages/shared/**'
-      - 'aws/package.json'
+      - 'packages/shared/**'
+      - 'package.json'
     branches: [ main ]
   pull_request:
     paths:
       - '.github/workflows/ci-shared.yml'
-      - 'aws/packages/shared/**'
-      - 'aws/package.json'
+      - 'packages/shared/**'
+      - 'package.json'
     branches: [ main ]
 
 env:

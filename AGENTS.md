@@ -7,6 +7,13 @@
 - O(N) となる処理を避け、O(1) となるように処理を記述する
 - 実装完了後にbuild/lint/testを実行し、エラーがないことを確認する
 
+## Monorepo Guidelines
+
+- 複数パッケージ(api/bin/client/shared)の実装がたまたま似ていても、それだけを理由に共通化しない(ルートに tsconfig.base.json を作って extends させる、logger/fetcher のような実装コードを shared に抽出する、など)
+- 各パッケージは実行コンテキストが異なる(Node ESM バックエンド、Next.js フロントエンド、dev専用CLI 等)。今の実装が偶然似ている・フレームワーク非依存に書けているとしても、それは本質的な共通性の証明にはならない。重複を許容し、各パッケージを自己完結させる
+- shared に置いてよいのは、API契約やDBスキーマのようにフレームワーク・実装に関わらず常に同一であるべきもの(生成された OpenAPI schema 型、Prisma client、Result 型など)に限る
+- 共通化を提案する前に「client パッケージが全く別のフレームワークで書き直されたら、この共通化は成立するか?」と自問する
+
 ## JavaScript Guiedelines
 
 - arrow functionを利用する場合は改行, `{}`, `return` を省略せずに記述する

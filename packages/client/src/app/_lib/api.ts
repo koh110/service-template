@@ -1,5 +1,4 @@
-import type * as schema from 'shared/src/generated/schema'
-import type { Result } from 'shared/src/index'
+import type { Result, schema } from 'shared/src/index'
 
 type Prettify<T> = {
   [K in keyof T]: T[K]

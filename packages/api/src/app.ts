@@ -1,26 +1,29 @@
 import { Hono } from 'hono'
-import { logger as honoLogger } from 'hono/logger'
 import type { schema } from 'shared/src/index'
 import * as user from './handlers/user/index.js'
 import { createClient } from './lib/database.js'
-import { logger } from './lib/logger.js'
-import { corsMiddleware } from './lib/middleware.js'
+import { accessLogMiddleware, corsMiddleware } from './lib/middleware.js'
+import type { ProblemDetails } from './lib/wrap.js'
+import { handleError } from './lib/wrap.js'
 
 export async function createApp() {
   const dbClient = createClient()
   await dbClient.$connect()
 
   const app = new Hono()
-  app.use(
-    honoLogger((message, ...rest) => {
-      logger.log({
-        label: 'log',
-        body: message,
-        meta: rest
-      })
-    })
-  )
+  app.use(accessLogMiddleware())
   app.use('/api/*', corsMiddleware)
+  app.onError(handleError)
+  app.notFound((c) =>
+    c.json(
+      {
+        type: 'about:blank',
+        title: 'Not Found',
+        status: 404
+      } satisfies ProblemDetails,
+      404
+    )
+  )
 
   app.get('/', (c) => c.text('Hello'))
 

@@ -5,22 +5,31 @@ namespace MyProducts;
 
 @route("/api/user")
 interface User {
-  @get listUser(@header("Authorization") auth: string): {
-    @statusCode statusCode: 200;
-    @body body: {
-      count: integer;
-      user: {
-        id: integer;
-        name: string;
+  @get listUser(@header("Authorization") auth: string):
+    | {
+        @statusCode statusCode: 200;
+        @body body: {
+          count: integer;
+          user: {
+            id: integer;
+            name: string;
 
-        @doc("unix timestamp seconds")
-        created_at: integer;
+            @doc("unix timestamp seconds")
+            created_at: integer;
 
-        @doc("unix timestamp seconds")
-        updated_at: integer;
-      }[];
-    };
-  };
+            @doc("unix timestamp seconds")
+            updated_at: integer;
+          }[];
+        };
+      }
+    | {
+        @statusCode statusCode: 401;
+        @body body: UnauthorizedError;
+      }
+    | {
+        @statusCode statusCode: 500;
+        @body body: InternalServerError;
+      };
 
   @route("/{id}")
   @put
@@ -39,35 +48,22 @@ interface User {
       }
     | {
         @statusCode statusCode: 400;
-        @body body: {
-          message: string;
-          cause: string;
-        };
+        @body body: BadRequestError;
       }
     | {
         @statusCode statusCode: 401;
-        @body body: {
-          message: string;
-          cause: string;
-        };
+        @body body: UnauthorizedError;
       }
     | {
         @statusCode statusCode: 403;
-        @body body: {
-          message: string;
-          cause: string;
-        };
+        @body body: ForbiddenError;
       }
     | {
         @statusCode statusCode: 404;
-        @body body: {
-          message: string;
-        };
+        @body body: NotFoundError;
       }
     | {
         @statusCode statusCode: 500;
-        @body body: {
-          message: string;
-        };
+        @body body: InternalServerError;
       };
 }

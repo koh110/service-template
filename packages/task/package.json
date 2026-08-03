@@ -1,0 +1,28 @@
+{
+  "private": true,
+  "type": "module",
+  "name": "task",
+  "scripts": {
+    "build": "tsc --build tsconfig.json",
+    "predev-migrate": "npm run build",
+    "dev-migrate": "./bin/env.sh node dist/src/index.js migrate",
+    "predev-hello": "npm run build",
+    "dev-hello": "./bin/env.sh node dist/src/index.js hello",
+    "tsc": "tsc --build tsconfig.test.json",
+    "vitest": "vp test --config=./vite.config.ts",
+    "test": "concurrently \"npm run tsc\" \"npm run vitest\"",
+    "test-ci": "vp test run --config=./vite.config.ts --maxWorkers=1",
+    "format": "vp fmt package.json src bin --write",
+    "format-check": "vp fmt package.json src bin --check",
+    "lint": "vp lint src bin",
+    "lint-fix": "vp lint src bin --fix"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "concurrently": "^9.2.1",
+    "typescript": "^6.0.2"
+  }
+}

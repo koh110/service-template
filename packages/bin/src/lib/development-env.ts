@@ -3,7 +3,7 @@ import path from 'node:path'
 import { parseArgs, parseEnv } from 'node:util'
 import { fetchDbPort, fetchProxyPort } from './docker-compose.ts'
 
-const PACKAGES = ['api', 'client', 'shared'] as const
+const PACKAGES = ['api', 'client', 'shared', 'task'] as const
 
 const { values } = parseArgs({
   options: {
@@ -44,6 +44,9 @@ export async function developmentEnv(_packageName: string | undefined) {
     case 'shared':
       await shared(overrideEnv)
       break
+    case 'task':
+      await task(overrideEnv)
+      break
   }
 }
 
@@ -80,6 +83,30 @@ async function api(overrideEnv: Record<string, string>) {
 
 async function shared(overrideEnv: Record<string, string>) {
   const targetDir = path.resolve(import.meta.dirname, '../../../shared')
+  const envFilePath = path.resolve(targetDir, '.env.sample')
+  const envSample = await fs.readFile(envFilePath, 'utf-8')
+  const parsedEnv = parseEnv(envSample)
+  const dbPort = await fetchDbPort()
+  if (!dbPort) {
+    throw new Error('Failed to fetch database port.')
+  }
+
+  if (parsedEnv.DATABASE_URL) {
+    const dbUrl = new URL(parsedEnv.DATABASE_URL)
+    dbUrl.port = dbPort
+    parsedEnv.DATABASE_URL = dbUrl.toString()
+  }
+
+  const env = {
+    ...parsedEnv,
+    ...overrideEnv
+  } as const satisfies NodeJS.Dict<string>
+
+  writeEnvToStdout(env)
+}
+
+async function task(overrideEnv: Record<string, string>) {
+  const targetDir = path.resolve(import.meta.dirname, '../../../task')
   const envFilePath = path.resolve(targetDir, '.env.sample')
   const envSample = await fs.readFile(envFilePath, 'utf-8')
   const parsedEnv = parseEnv(envSample)

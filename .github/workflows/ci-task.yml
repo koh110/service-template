@@ -1,0 +1,42 @@
+name: CI task
+
+on:
+  push:
+    paths:
+      - 'packages/task/**'
+      - 'package.json'
+    branches: [ main ]
+  pull_request:
+    paths:
+      - '.github/workflows/ci-task.yml'
+      - 'packages/shared/**'
+      - 'packages/task/**'
+      - 'package.json'
+    branches: [ main ]
+
+env:
+  WORKSPACE_NAME: task
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+      - run: npm ci
+      - run: npm run lint -w ${{ env.WORKSPACE_NAME }}
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+      - run: npm ci
+      - run: npm run build -w shared
+      - run: npm run build -w ${{ env.WORKSPACE_NAME }}
+      - run: npm run test-ci -w ${{ env.WORKSPACE_NAME }}

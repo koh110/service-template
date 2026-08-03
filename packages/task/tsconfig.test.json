@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig",
+  "include": ["src/**/*.ts", "bin/**/*.ts", "vite.config.ts"],
+  "exclude": ["dist", "node_modules"],
+  "compilerOptions": {
+    "noEmit": true,
+    "noImplicitThis": false,
+    "types": ["node"]
+  },
+  "references": [{ "path": "../shared" }]
+}

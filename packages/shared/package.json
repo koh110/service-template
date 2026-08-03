@@ -39,12 +39,12 @@
     "@typespec/rest": "^0.80.0",
     "concurrently": "^9.2.1",
     "openapi-typescript": "^7.9.1",
-    "prisma": "^7.5.0",
     "typescript": "^6.0.2"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.5.0",
-    "@prisma/client": "^7.5.0"
+    "@prisma/client": "^7.5.0",
+    "prisma": "^7.5.0"
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "^4.60.0"

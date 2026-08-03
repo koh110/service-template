@@ -8,6 +8,13 @@ services:
       POSTGRES_USER: "username"
       POSTGRES_PASSWORD: "randompassword"
       POSTGRES_DB: "dbname"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U username -d dbname"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
   test-db:
     image: postgres:17
     ports:
@@ -16,6 +23,11 @@ services:
       POSTGRES_USER: "test_username"
       POSTGRES_PASSWORD: "test_randompassword"
       POSTGRES_DB: "test_db"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_username -d test_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
   nginx:
     build:
       context: ./middleware/nginx
@@ -27,3 +39,5 @@ services:
       - ./middleware/nginx/dynamic:/etc/nginx/dynamic
     extra_hosts:
       - "host.docker.internal:${DOCKER_HOST_IP:-host-gateway}"
+volumes:
+  db-data:

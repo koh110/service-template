@@ -2,8 +2,11 @@
 
 ## dev
 
+- 作業開始前に必ず実行: `[ -f .env ] || bash init.sh`
+  - root の `.env` の有無が「ローカル環境が初期化済みか」の唯一の判定基準。存在しなければ `init.sh` を実行してから作業を始める
+  - `init.sh` は `npm i` → `npm run init`(ブランチ名から `COMPOSE_PROJECT_NAME` を生成)→ `docker compose up -d --wait` → migration → `shared` の build まで行う
+  - worktree を削除する前には `cleanup.sh` を実行すること(孤児コンテナ/ネットワークが残るのを防ぐ)。DB データは named volume に残るので、完全にリセットしたい場合は `docker compose down -v` を使う
 - use npm workspaces
-- at first, run `npm install` & `npm run init-local -w bin` at the root directory
 - O(N) となる処理を避け、O(1) となるように処理を記述する
 - 実装完了後にbuild/lint/testを実行し、エラーがないことを確認する
 

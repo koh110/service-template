@@ -9,6 +9,7 @@
 - use npm workspaces
 - O(N) となる処理を避け、O(1) となるように処理を記述する
 - 実装完了の条件: 変更したパッケージに対応する CI ワークフロー(`.github/workflows/ci-{api,client,shared,task}.yml`)に書かれているコマンドをローカルで実行し、build/lint/test がエラーなく通ること。CI と異なるコマンドを実行して「通った」と判断しない
+- 特定の作業をするときだけ必要な詳細ガイドラインは `agents/` 配下に置き、この AGENTS.md からは「いつ読むか」を1行で指す
 
 ## Monorepo Guidelines
 
@@ -44,41 +45,15 @@
 - type assertion を避ける
 - interfaceは利用せずtypeを利用する
 - 可能な場合は必ず `as const` を記述する
-
-### 型推論ガイドライン
-
-新しく型を定義する前に、既存の型ソースから導出できないか以下の優先順位で確認する。
-
-1. 生成済みスキーマ(`shared/src/index` の `schema`。例: `schema.paths['/api/user']['get']['responses']['200']['content']['application/json']`)
-2. 共通コンポーネントの props 型(ラップ対象コンポーネントの `ComponentProps<typeof X>`。例: `packages/client/src/app/_components/ui/Button.tsx`)
-3. Prisma の生成型(`Prisma.userGetPayload<{ select: typeof selectFields }>` 等)
-
-よくある違反:
-
-- API レスポンスの型を手書きする → `schema.paths[...]` から導出する
-- Radix 等をラップする共通コンポーネントで props を独自定義する → ラップ対象の `ComponentProps<typeof X>` を使う
-- DB から取得したデータの型を手書きする → `Prisma.xxxGetPayload<{ select: ... }>` を使う
+- 新しく型を手書きする前に `agents/type-inference.md` を読む(生成スキーマ・`ComponentProps`・Prisma payload から導出できないか確認する)
 
 ## Testing Guidelines
 
-- テストコードは `vitest` ではなく `vite-plus/test`(`TestProject` 等の型は `vite-plus/test/node`)から import する。`vite-plus`(vp)はテストランナーとして vitest 互換の実装を内部に持つが `vitest` パッケージ自体には依存しないため、`node_modules` に実体が存在しない。`vitest` を devDependency として個別に追加すると、vp が内部で保持するバージョンとの二重管理・ズレが生じるため行わない
-
-DB を使うテストは vitest の worker 単位で並列実行される(`VITEST_POOL_ID` で worker ごとに DB が分離される)。同一 worker 内の複数テストファイル間の干渉を防ぐため:
-
-- seed データの識別子には vitest fixture 経由で受け取れる `task.id` を prefix として使う(テストごとに一意になるため、並列実行時の衝突を避けられる)
-- `beforeAll` で複数テストが共有する seed を作らない(片方のテストが依存するデータを別テストが変更・削除すると、実行順序に依存する不安定なテストになる)
-- 件数(`count` / `length`)を assertion に使わない(他のテストが作ったデータが残っていると期待値が変わる。`prefix` で絞り込んだ上で個別の値を検証する)
-- `describe` を使わない(共通の `beforeEach` / `beforeAll` スコープを作る誘因になり、上記の共有 seed 問題を招きやすいため。フラットな `test()` を使う)
-  - この規約は `vite.config.ts` の `lint.overrides`(`*.test.ts` に対して `no-restricted-imports` で `vite-plus/test` からの `describe` import を error にする)で機械的に強制している
+- `*.test.ts` やテスト補助ファイル(`test/` 配下の setup 等)を新規作成・編集するときは `agents/testing-guidelines.md` を読む(vitest ではなく vite-plus/test から import する理由、並列実行時の seed 設計、`describe` 禁止)
 
 ## Prisma Guidelines
 
-- リレーションの `onDelete` は関係性に応じて明示する
-  - 所有関係(親を消したら子も消えてよい): `Cascade`
-  - 任意の外部キー(親が消えても子は残ってよい): `SetNull`
-  - マスタ参照(参照先が使われている間は消せない): `Restrict`
-- ステータス等の区分値を Boolean / Int で表現しない。将来値が増えうる区分には Prisma enum を使う
-- トランザクションのネストを避けるため、DB アクセスを行う関数は `tx?: Prisma.TransactionClient` を省略可能な引数として受け取り、渡されればそれを使い、渡されなければ自前で `$transaction` を張る
+- `packages/shared/prisma/schema.prisma` を編集するとき、または DB アクセスを行う関数を追加/変更するときは `agents/prisma-guidelines.md` を読む(`onDelete` の使い分け、enum 化の基準、`tx` 引数パターン)
 
 ### client
 

@@ -16,17 +16,22 @@ export default function Page() {
     event.preventDefault()
     setIsPending(true)
     setError(null)
-    const res = await fetch('/api/auth/session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken: email })
-    })
-    setIsPending(false)
-    if (!res.ok) {
+    try {
+      const res = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: email })
+      })
+      if (!res.ok) {
+        setError('Login failed')
+        return
+      }
+      router.push(getRoute({ type: 'top' }).path)
+    } catch {
       setError('Login failed')
-      return
+    } finally {
+      setIsPending(false)
     }
-    router.push(getRoute({ type: 'top' }).path)
   }
 
   return (

@@ -1,5 +1,5 @@
 import { Prisma } from 'shared/src/index'
-import { test as baseTest, beforeAll, expect } from 'vitest'
+import { test as baseTest, beforeAll, expect } from 'vite-plus/test'
 import { getTestDbClient, truncateTables } from '../../../../test/util.js'
 import { updateUser } from './handler.js'
 

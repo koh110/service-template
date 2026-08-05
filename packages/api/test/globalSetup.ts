@@ -2,7 +2,7 @@ import { exec } from 'node:child_process'
 import path from 'node:path'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from 'shared/src/index'
-import type { TestProject } from 'vitest/node'
+import type { TestProject } from 'vite-plus/test/node'
 import { getTestDbName, getTestDbParameters } from './util.js'
 
 export async function setup({ config }: TestProject) {
@@ -11,6 +11,9 @@ export async function setup({ config }: TestProject) {
   }
 
   process.env.DATABASE_URL = 'postgres://xxxx'
+  // localTokenVerifier 等の認証スタブは APP_ENV=local/test でのみ動作する
+  // (production への fail-closed のため)。テスト実行時は test を明示する。
+  process.env.APP_ENV = 'test'
 
   const { testDbUrl } = await getTestDbParameters(process.env)
   const rootTestDatabaseName =

@@ -1,10 +1,14 @@
 import { NEXT_PUBLIC_ENV } from '../../../constants'
 import type { AuthProvider, SessionClaims } from './types'
 
-function assertNotProduction() {
-  if (NEXT_PUBLIC_ENV.production) {
+function assertUsable() {
+  // APP_ENV が未設定(production デプロイでの設定漏れ含む)の場合も含めて、
+  // local/test 以外はすべて拒否する(fail-closed)。「production 以外なら許可」
+  // という判定にすると APP_ENV 未設定時にスタブが有効なままになり、
+  // 任意の値でログイン・セッション偽装ができてしまう。
+  if (!NEXT_PUBLIC_ENV.local && !NEXT_PUBLIC_ENV.test) {
     throw new Error(
-      'localAuthProvider is not usable in production. Replace authProvider in _lib/auth/index.ts with a real implementation before deploying.'
+      'localAuthProvider is only usable when APP_ENV is "local" or "test". Replace authProvider in _lib/auth/index.ts with a real implementation before deploying.'
     )
   }
 }
@@ -36,12 +40,12 @@ function decodeToken(token: string): SessionClaims {
   return { sub: claims.sub, exp: claims.exp }
 }
 
-// 署名検証を一切行わない自己完結トークンのスタブで、production では使えない
-// (assertNotProduction が throw する)。実プロバイダ(Firebase Admin 等)に
+// 署名検証を一切行わない自己完結トークンのスタブで、APP_ENV が local/test
+// 以外では使えない(assertUsable が throw する)。実プロバイダ(Firebase Admin 等)に
 // 差し替える場合は、この3メソッドを実際の検証・cookie発行ロジックに置き換える。
 export const localAuthProvider: AuthProvider = {
   async verifyIdToken(idToken) {
-    assertNotProduction()
+    assertUsable()
     // ログインフォームに入力された文字列をそのまま識別子として扱う
     // (実プロバイダでは署名検証を行う)
     if (idToken.length === 0) {
@@ -50,11 +54,11 @@ export const localAuthProvider: AuthProvider = {
     return { sub: idToken, exp: Date.now() }
   },
   async createSessionCookie(claims, { expiresInMs }) {
-    assertNotProduction()
+    assertUsable()
     return encodeToken({ sub: claims.sub, exp: Date.now() + expiresInMs })
   },
   async verifySessionCookie(sessionCookie) {
-    assertNotProduction()
+    assertUsable()
     return decodeToken(sessionCookie)
   }
 }

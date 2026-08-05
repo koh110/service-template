@@ -17,6 +17,9 @@ RUN npm run build -w client
 FROM node:24-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+# APP_ENV=production を明示することで localAuthProvider(認証スタブ)を
+# fail-closed にする(コード側の allowlist が主防御だが、多層防御として設定する)
+ENV APP_ENV=production
 
 COPY --from=builder --chown=node:node /app/packages/client/.next/standalone ./
 COPY --from=builder --chown=node:node /app/packages/client/.next/static packages/client/.next/static

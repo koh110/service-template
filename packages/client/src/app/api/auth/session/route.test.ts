@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { expect, test, vi } from 'vitest'
+import { expect, test, vi } from 'vite-plus/test'
 
 vi.mock('server-only', () => ({}))
 

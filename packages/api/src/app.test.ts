@@ -1,4 +1,4 @@
-import { beforeAll, expect, test, vi } from 'vitest'
+import { beforeAll, expect, test, vi } from 'vite-plus/test'
 import { getTestDbClient } from '../test/util.js'
 import { createApp } from './app.js'
 

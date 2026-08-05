@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest'
+import { expect, test } from 'vite-plus/test'
 import { hello } from './hello.js'
 
 test('hello greets by name and reports the user count', async () => {

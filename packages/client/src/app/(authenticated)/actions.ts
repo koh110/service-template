@@ -1,21 +1,31 @@
 'use server'
 import 'server-only'
-import { API_URI } from '../config.server'
-import { type APIResult, client } from './_lib/api'
-import { logger } from './_lib/logger'
+import { cookies } from 'next/headers'
+import { API_URI } from '../../config.server'
+import { type APIResult, client } from '../_lib/api'
+import { SESSION_COOKIE_NAME } from '../_lib/auth/index'
+import { logger } from '../_lib/logger'
 
 type FetchUserListResponse = APIResult<'/api/user', 'get', 200>
 
 export async function fetchUserList() {
   try {
+    const sessionCookie = (await cookies()).get(SESSION_COOKIE_NAME)?.value
+    if (!sessionCookie) {
+      return {
+        ok: false,
+        status: 401,
+        body: 'not authenticated'
+      } as const satisfies FetchUserListResponse
+    }
+
     const url = new URL('/api/user', API_URI)
     const res = await client(url.toString(), {
       path: '/api/user',
       method: 'get',
       parameters: {
         header: {
-          // @todo token
-          Authorization: `Bearer ${'token'}`
+          Authorization: `Bearer ${sessionCookie}`
         }
       }
     })

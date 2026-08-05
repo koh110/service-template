@@ -2,8 +2,13 @@ import { randomUUID } from 'node:crypto'
 import { cors } from 'hono/cors'
 import { createMiddleware } from 'hono/factory'
 import { CORS_OPTIONS } from '../config.js'
+import { localTokenVerifier } from '../lib/auth/local-verifier.js'
+import type { TokenVerifier } from '../lib/auth/token-verifier.js'
 import { logger } from '../lib/logger.js'
 import { createHttpException } from './wrap.js'
+
+// 実プロバイダ(Firebase Admin 等)に差し替える場合はここを変更する
+const tokenVerifier: TokenVerifier = localTokenVerifier
 
 declare module 'hono' {
   interface ContextVariableMap {
@@ -46,15 +51,20 @@ export function verifyAuthorizationMiddleware() {
         detail: 'Authorization error'
       })
     }
+    const [, sessionToken] = authorization.split(' ')
+    if (!sessionToken) {
+      throw createHttpException(401, {
+        title: 'Unauthorized',
+        detail: 'Authorization error'
+      })
+    }
     try {
-      const [, sessionToken] = authorization.split(' ')
-      // @todo
-      // await verifyToken(sessionToken)
+      await tokenVerifier.verify(sessionToken)
       c.set('sessionToken', sessionToken)
     } catch (error) {
       logger.log({
-        label: 'firebase_verification',
-        body: 'Firebase ID token verification failed',
+        label: 'token_verification',
+        body: 'token verification failed',
         meta: { error }
       })
       throw createHttpException(401, {

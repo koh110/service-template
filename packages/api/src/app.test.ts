@@ -2,6 +2,12 @@ import { beforeAll, expect, test, vi } from 'vitest'
 import { getTestDbClient } from '../test/util.js'
 import { createApp } from './app.js'
 
+// localTokenVerifier が検証できる形(base64url な JSON)の有効なトークンを組み立てる
+function validBearerToken() {
+  const claims = { sub: 'test-user', exp: Date.now() + 60_000 }
+  return Buffer.from(JSON.stringify(claims), 'utf-8').toString('base64url')
+}
+
 let dbClient: Awaited<ReturnType<typeof getTestDbClient>>
 
 beforeAll(async () => {
@@ -50,7 +56,7 @@ test('handler errors after successful authentication are not swallowed as 401', 
   const res = await app.request('/api/user/999999999', {
     method: 'PUT',
     headers: {
-      Authorization: 'Bearer test-token',
+      Authorization: `Bearer ${validBearerToken()}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({})

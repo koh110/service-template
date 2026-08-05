@@ -1,4 +1,4 @@
-import { logger } from './_lib/logger'
+import { logger } from '../_lib/logger'
 import { fetchUserList } from './actions'
 
 export default async function Page() {

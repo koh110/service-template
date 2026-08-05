@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
-    "@typespec/compiler": "^1.10.0",
+    "@typespec/compiler": "^1.14.0",
     "@typespec/http": "^1.10.0",
     "@typespec/openapi": "^1.10.0",
     "@typespec/openapi3": "^1.10.0",

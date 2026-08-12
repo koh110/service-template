@@ -10,10 +10,7 @@
     "lib": ["ESNext"],
     "module": "nodenext",
     "skipLibCheck": true,
-    "rootDir": "./",
-    "paths": {
-      "shared": ["../shared"]
-    }
+    "rootDir": "./"
   },
   "exclude": ["dist", "node_modules", "test", "**/*.test.ts"],
   "references": [{ "path": "../shared" }]

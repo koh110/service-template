@@ -5,7 +5,7 @@
   "compilerOptions": {
     "noEmit": true,
     "noImplicitThis": false,
-    "types": ["node", "vitest"]
+    "types": ["node"]
   },
   "references": [
     {

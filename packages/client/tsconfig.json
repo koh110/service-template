@@ -22,12 +22,7 @@
       {
         "name": "next"
       }
-    ],
-    "paths": {
-      "shared/*": [
-        "../shared/dist/*"
-      ]
-    }
+    ]
   },
   "include": [
     "next-env.d.ts",
@@ -39,5 +34,6 @@
   ],
   "exclude": [
     "node_modules"
-  ]
+  ],
+  "references": [{ "path": "../shared" }]
 }

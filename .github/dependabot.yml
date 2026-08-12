@@ -10,8 +10,18 @@ updates:
     schedule:
       interval: "daily"
   - package-ecosystem: "docker"
-    # Look for a `Dockerfile` in the `root` directory
-    directory: "/"
-    # Check for updates once a week
+    directory: "/packages/api"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker"
+    directory: "/packages/client"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker"
+    directory: "/packages/shared"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker"
+    directory: "/middleware/nginx"
     schedule:
       interval: "weekly"

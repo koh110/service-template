@@ -2,7 +2,6 @@ import { validator } from 'hono/validator'
 import type { schema } from 'shared/src/index'
 import { z } from 'zod'
 import { verifyAuthorizationMiddleware } from '../../../lib/middleware.js'
-import { handleError } from '../../../lib/wrap.js'
 import { updateUser, updateUserBodySchema } from './handler.js'
 
 export function createRoute(
@@ -19,10 +18,12 @@ export function createRoute(
       if (!parsedId.success) {
         return c.json(
           {
-            message: 'Invalid id',
-            cause: parsedId.error.issues.join(',')
+            type: 'about:blank',
+            title: 'Bad Request',
+            status: 400,
+            detail: parsedId.error.issues.map((issue) => issue.message).join(', ')
           } satisfies UpdateUserResponse['400']['content']['application/json'],
-          { status: 400 }
+          400
         )
       }
       return { id: parsedId.data }
@@ -32,10 +33,12 @@ export function createRoute(
       if (!parsed.success) {
         return c.json(
           {
-            message: 'Invalid request body',
-            cause: parsed.error.issues.join(',')
+            type: 'about:blank',
+            title: 'Bad Request',
+            status: 400,
+            detail: parsed.error.issues.map((issue) => issue.message).join(', ')
           } satisfies UpdateUserResponse['400']['content']['application/json'],
-          { status: 400 }
+          400
         )
       }
       return parsed.data
@@ -43,14 +46,10 @@ export function createRoute(
     async (c) => {
       const id = c.req.valid('param').id
       const body = c.req.valid('json')
-      try {
-        const res = await updateUser({ dbClient, id, body })
-        return c.json(
-          res satisfies schema.paths['/api/user/{id}']['put']['responses']['200']['content']['application/json']
-        )
-      } catch (e) {
-        return handleError(c, e)
-      }
+      const res = await updateUser({ dbClient, id, body })
+      return c.json(
+        res satisfies schema.paths['/api/user/{id}']['put']['responses']['200']['content']['application/json']
+      )
     }
   )
 }

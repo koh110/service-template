@@ -2,10 +2,21 @@
 
 ## dev
 
+- 作業開始前に必ず実行: `[ -f .env ] || bash init.sh`
+  - root の `.env` の有無が「ローカル環境が初期化済みか」の唯一の判定基準。存在しなければ `init.sh` を実行してから作業を始める
+  - `init.sh` は `npm i` → `npm run init`(ブランチ名から `COMPOSE_PROJECT_NAME` を生成)→ `docker compose up -d --wait` → migration → `shared` の build まで行う
+  - worktree を削除する前には `cleanup.sh` を実行すること(孤児コンテナ/ネットワークが残るのを防ぐ)。DB データは named volume に残るので、完全にリセットしたい場合は `docker compose down -v` を使う
 - use npm workspaces
-- at first, run `npm install` & `npm run init-local -w bin` at the root directory
 - O(N) となる処理を避け、O(1) となるように処理を記述する
-- 実装完了後にbuild/lint/testを実行し、エラーがないことを確認する
+- 実装完了の条件: 変更したパッケージに対応する CI ワークフロー(`.github/workflows/ci-{api,client,shared,task}.yml`)に書かれているコマンドをローカルで実行し、build/lint/test がエラーなく通ること。CI と異なるコマンドを実行して「通った」と判断しない
+- 特定の作業をするときだけ必要な詳細ガイドラインは `agents/` 配下に置き、この AGENTS.md からは「いつ読むか」を1行で指す
+
+## Monorepo Guidelines
+
+- 複数パッケージ(api/bin/client/shared)の実装がたまたま似ていても、それだけを理由に共通化しない(ルートに tsconfig.base.json を作って extends させる、logger/fetcher のような実装コードを shared に抽出する、など)
+- 各パッケージは実行コンテキストが異なる(Node ESM バックエンド、Next.js フロントエンド、dev専用CLI 等)。今の実装が偶然似ている・フレームワーク非依存に書けているとしても、それは本質的な共通性の証明にはならない。重複を許容し、各パッケージを自己完結させる
+- shared に置いてよいのは、API契約やDBスキーマのようにフレームワーク・実装に関わらず常に同一であるべきもの(生成された OpenAPI schema 型、Prisma client、Result 型など)に限る
+- 共通化を提案する前に「client パッケージが全く別のフレームワークで書き直されたら、この共通化は成立するか?」と自問する
 
 ## JavaScript Guiedelines
 
@@ -34,6 +45,15 @@
 - type assertion を避ける
 - interfaceは利用せずtypeを利用する
 - 可能な場合は必ず `as const` を記述する
+- 新しく型を手書きする前に `agents/type-inference.md` を読む(生成スキーマ・`ComponentProps`・Prisma payload から導出できないか確認する)
+
+## Testing Guidelines
+
+- `*.test.ts` やテスト補助ファイル(`test/` 配下の setup 等)を新規作成・編集するときは `agents/testing-guidelines.md` を読む(vitest ではなく vite-plus/test から import する理由、並列実行時の seed 設計、`describe` 禁止)
+
+## Prisma Guidelines
+
+- `packages/shared/prisma/schema.prisma` を編集するとき、または DB アクセスを行う関数を追加/変更するときは `agents/prisma-guidelines.md` を読む(`onDelete` の使い分け、enum 化の基準、`tx` 引数パターン)
 
 ### client
 
@@ -62,8 +82,17 @@
 ### shared
 
 - lint
-  - npm run lint -w api
+  - npm run lint -w shared
 - build
   - npm run build -w shared
 - migration local
   - npm run db-migrate -w shared
+
+### task
+
+- lint
+  - npm run lint -w task
+- build
+  1. npm run build -w shared
+  2. npm run build -w task
+- タスクを追加する場合は `src/tasks/` に実装を置き、`src/index.ts` の switch から `await import()` で遅延読み込みする(あるタスクの実行に他タスク用の env を要求しないようにするため)

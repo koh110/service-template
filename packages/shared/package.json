@@ -3,7 +3,14 @@
   "type": "module",
   "name": "shared",
   "exports": {
-    "./src/*": "./dist/src/*.js"
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./src/index": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    }
   },
   "scripts": {
     "compile": "tsp compile .",
@@ -12,7 +19,6 @@
     "openapi-ts": "openapi-typescript ./tsp-output/schema/openapi.yaml --output ./src/generated/schema.ts",
     "prebuild": "concurrently \"npm run openapi-ts\" \"npm run db-generate\"",
     "build": "tsc --build tsconfig.json",
-    "postbuild": "node bin/postbuild.ts",
     "db-generate": "prisma generate",
     "db-migrate": "./bin/env.sh prisma migrate dev",
     "db-migrate:deploy": "prisma migrate deploy",
@@ -33,12 +39,12 @@
     "@typespec/rest": "^0.80.0",
     "concurrently": "^9.2.1",
     "openapi-typescript": "^7.9.1",
-    "prisma": "^7.5.0",
     "typescript": "^6.0.2"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.5.0",
-    "@prisma/client": "^7.5.0"
+    "@prisma/client": "^7.5.0",
+    "prisma": "^7.5.0"
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "^4.60.0"

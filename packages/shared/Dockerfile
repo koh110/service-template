@@ -1,4 +1,4 @@
-FROM node:24 AS builder
+FROM node:26 AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json .npmrc ./
@@ -8,7 +8,7 @@ RUN npm ci --min-release-age=7
 COPY packages/shared packages/shared
 RUN npm run build -w shared
 
-FROM node:24-alpine AS runner
+FROM node:26-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 

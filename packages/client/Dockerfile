@@ -1,4 +1,4 @@
-FROM node:24 AS builder
+FROM node:26 AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json .npmrc ./
@@ -14,7 +14,7 @@ RUN npm run build -w client
 # Next.js の `output: 'standalone'` はモノレポのディレクトリ構造を保ったまま出力する。
 # server.js は packages/client/server.js に置かれる。static/public は standalone
 # 出力に含まれないため別途コピーする(Next.js 公式の Docker デプロイ手順どおり)。
-FROM node:24-alpine AS runner
+FROM node:26-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 # APP_ENV=production を明示することで localAuthProvider(認証スタブ)を

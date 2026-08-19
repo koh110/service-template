@@ -50,6 +50,14 @@ Hono は `res` 付きの `HTTPException` を `app.onError` 無しでも正しく
 
 Hono のルーティングはパスパラメータを `:id` で表す(例: `/api/user/:id`)が、TypeSpec/OpenAPI 側は `{id}` で表す(`/api/user/{id}`)。この表記の違いにより、`app.put('/api/user/:id' satisfies keyof schema.paths, ...)` のように書いても `satisfies keyof schema.paths` は効かない(文字列リテラルが一致しないため)。この場合は `app.put('/api/user/:id', ...)` とし、代わりに `UpdateUserApi = schema.paths['/api/user/{id}']['put']` のように型側の参照で契約と紐付ける。
 
+## lint による機械強制
+
+`lint-rules/`(プラグイン名 `api-contract`)が以下を強制する。
+
+- `api-contract/require-validator-return-type` → 「ルーティング型安全化の3点セット」の3(validator の戻り値型注釈)。既知の限界: `fn` が named function への参照のみの場合は検出対象外なので、宣言側で戻り値型注釈を付けること
+- `api-contract/require-httpexception-res` → 「既知の罠: `cause` では拡張フィールドが届かない」
+- `api-contract/require-validator-for-param-query` → validator を経由しない `req.param()`/`req.query()` の直接呼び出し禁止
+
 ## 新しい lint / 検査ルールの段階導入手順
 
 `check-missing-4xx-responses` のような新しい機械検査を導入する際、既存コードに違反が残っている状態でいきなり CI を落とすと、無関係な PR まで巻き込んで止まってしまう。以下の順で導入する。

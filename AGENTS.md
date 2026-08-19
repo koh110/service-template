@@ -34,6 +34,11 @@
 - ReactのコンポーネントはArrow Functionではなく通常のFunctionを利用する
 - propsはinterfaceではなくtypeで定義する
 - コンポーネント表示/非表示の制御はActivityを利用する
+- React Hook Form を導入する場合(フォームを実装するとき)は以下に従う
+  - 各フィールドは `register` を直接バインドする(`watch` + `setValue` による手動ハンドリングを禁じる)
+  - 初期値は `useState` 等で持たず `defaultValue` を使う
+  - checkbox の配列は `string[]` として扱う
+  - フォーム全体のリセットは `reset()` の手動呼び出しではなく、`key` を更新してコンポーネントごと再マウントする方式を優先する
 
 ## TypeScript Guidelines
 
@@ -54,6 +59,19 @@
 ## Prisma Guidelines
 
 - `packages/shared/prisma/schema.prisma` を編集するとき、または DB アクセスを行う関数を追加/変更するときは `agents/prisma-guidelines.md` を読む(`onDelete` の使い分け、enum 化の基準、`tx` 引数パターン)
+
+## API Contract Guidelines
+
+- api の handler / validator を書くときは `agents/api-contract.md` を読む(ルーティング型安全化の3点セット、バリデーション失敗時は `throw createHttpException` に統一する理由、400 レスポンス変更は公開契約変更であること)
+
+## Validation Guidelines
+
+- zod は api(`zod`)と client(`zod/mini`)で使い分ける。api はサーバサイドでバンドルサイズを気にする必要が薄いためフル機能の `zod` を、client はクライアントバンドルに含まれるため軽量な `zod/mini` を使う
+
+## API 通信パターン
+
+- GET は Server Actions(`'use server'`。`shared/src/index` の `Result` 型を返す)、POST/PUT/DELETE は `/proxy/api/...`(`packages/client/src/app/proxy/api/[...path]/route.ts`)経由のクライアントサイド関数(`packages/client/src/app/_lib/api.client.ts` の `client()`)を使う。`useActionState` / `<form action={...}>` は使わない(状態遷移やエラー表示をクライアント側で細かく制御するため)
+- エラー表示は `packages/client/src/app/_lib/api.ts` の `extractErrorMessage(body)` を単一入口とする。`body.detail` 等のレスポンス形状をコンポーネント側で直接参照しない(RFC9457 の `detail` フィールド名変更やエラー形状の拡張に強くするため)
 
 ### client
 
@@ -78,6 +96,7 @@
 - bodyはvalidatorとzodで必ずバリデーションを行う
 - ループ処理の内部でINSERT/UPDATE/DELETEを繰り返し実行することを禁じる
   - bulk insert/update/deleteを優先して利用する
+- HTTP に依存しないドメインロジック(バリデーション、DB アクセスを伴う処理など)は `src/features/<domain>/` 以下に動詞単位のファイル(`validate.ts` / `save.ts` 等)として切り出し、テストは隣接させる(`validate.test.ts` 等)。handler(`handlers/**`)はリクエスト/レスポンスの変換と `features/` の呼び出しに徹し、薄く保つ
 
 ### shared
 
@@ -96,3 +115,4 @@
   1. npm run build -w shared
   2. npm run build -w task
 - タスクを追加する場合は `src/tasks/` に実装を置き、`src/index.ts` の switch から `await import()` で遅延読み込みする(あるタスクの実行に他タスク用の env を要求しないようにするため)
+- 1タスク = 1ディレクトリとし、内部を役割ごとに分解する: `index`(全体を統合するエントリポイント)/ `db`(永続化処理)/ `lib`(純粋関数)/ 通知処理(Slack 通知等、あれば)。タスク別の config が必要な場合は、共通 config を直接 import せず、private な部品ローダーを合成する `loadXxxConfig()` パターンで組み立てる(そのタスクの実行に無関係な env 変数を要求しないため)

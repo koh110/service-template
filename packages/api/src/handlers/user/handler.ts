@@ -1,4 +1,4 @@
-import type { schema } from 'shared/src/index'
+import type * as schema from 'shared/src/schema'
 import type { createClient } from '../../lib/database.js'
 import { dateToUnixTimestampSec } from '../../lib/util.js'
 

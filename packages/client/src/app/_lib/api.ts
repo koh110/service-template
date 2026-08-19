@@ -1,4 +1,6 @@
-import type { Result, schema } from 'shared/src/index'
+import type { Result } from 'shared/src/index'
+import type * as schema from 'shared/src/schema'
+import { logger } from './logger'
 
 type Prettify<T> = {
   [K in keyof T]: T[K]
@@ -24,7 +26,7 @@ export type ClientResponse<R> =
   | TypedResponse<R>
   | { status: Exclude<HttpStatus, StatusNumKeys<R>>; body: string }
 
-type HttpMethod =
+export type HttpMethod =
   | 'get'
   | 'post'
   | 'put'
@@ -39,12 +41,32 @@ type OptionsFor<
   K extends HttpMethod
 > = Parameters<typeof createFetchOptions<T, K>>[0]
 
+type ExtractQuery<Op> = Op extends {
+  parameters: { query?: infer Q }
+}
+  ? NonNullable<Q>
+  : never
+
+type QueryType<
+  T extends keyof schema.paths,
+  K extends HttpMethod
+> = K extends keyof schema.paths[T] ? ExtractQuery<schema.paths[T][K]> : never
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
 export async function client<
   T extends keyof schema.paths,
   K extends HttpMethod
 >(
   url: string,
-  options: OptionsFor<T, K>,
+  options: OptionsFor<T, K> & {
+    appendQuery?: (
+      urlSearchParams: URLSearchParams,
+      query: QueryType<T, K>
+    ) => URLSearchParams
+  },
   _init?: { next?: RequestInit['next'] } & RequestInit
 ): Promise<
   Prettify<
@@ -66,12 +88,9 @@ export async function client<
   function hasHeader(o: typeof _options): o is typeof _options & {
     parameters: { header: Record<string, string> }
   } {
-    return (
-      'parameters' in o &&
-      o.parameters !== null &&
-      typeof (o as any).parameters === 'object' &&
-      'header' in (o as any).parameters
-    )
+    if (!isRecord(o) || !('parameters' in o)) return false
+    const { parameters } = o
+    return isRecord(parameters) && 'header' in parameters
   }
 
   if (hasHeader(_options)) {
@@ -82,14 +101,35 @@ export async function client<
   }
 
   function hasRequestBody(o: typeof _options) {
-    return 'requestBody' in o
+    return isRecord(o) && 'requestBody' in o
   }
 
   if (hasRequestBody(_options)) {
     init.body = JSON.stringify(_options.requestBody)
   }
 
-  const res = await fetch(url, init)
+  function hasQuery(o: typeof _options): o is typeof _options & {
+    parameters: { query: QueryType<T, K> }
+  } {
+    if (!isRecord(o) || !('parameters' in o)) return false
+    const { parameters } = o
+    return isRecord(parameters) && 'query' in parameters
+  }
+
+  let _url = url
+  if (_options.appendQuery && hasQuery(_options)) {
+    const urlSearchParams = new URLSearchParams()
+    const sp = _options.appendQuery(
+      urlSearchParams,
+      _options.parameters.query
+    )
+    const qs = sp.toString()
+    if (qs) {
+      _url = `${url}${url.includes('?') ? '&' : '?'}${qs}`
+    }
+  }
+
+  const res = await fetch(_url, init)
   let body = await res.text()
   const contentType = res.headers.get('Content-Type')
   if (
@@ -129,12 +169,12 @@ export function createFetchOptions<
 }
 
 type APIResultBase<
-  T extends keyof schema.paths,
-  K extends HttpMethod,
+  ClientFn extends (...args: never[]) => unknown,
   SuccessStatus extends number,
-  APIResponse extends { status: number; body: unknown } = Awaited<
-    ReturnType<typeof client<T, K>>
-  >
+  APIResponse extends { status: number; body: unknown } =
+    Awaited<ReturnType<ClientFn>> extends { status: number; body: unknown }
+      ? Awaited<ReturnType<ClientFn>>
+      : never
 > = Result<
   Extract<APIResponse, { status: SuccessStatus }>['body'],
   | Extract<
@@ -144,8 +184,40 @@ type APIResultBase<
   | string
 >
 
+// ClientFn には `typeof client<'/api/user', 'get'>` のように、path/method で
+// 具体化した client() の型をそのまま渡す。path/method を APIResult 側で
+// 再指定しない(単一の情報源から導出する)ことで、client() の型と APIResult の
+// 型が食い違う余地を無くす
 export type APIResult<
-  T extends keyof schema.paths,
-  K extends HttpMethod,
+  ClientFn extends (...args: never[]) => unknown,
   SuccessStatus extends number
-> = APIResultBase<T, K, SuccessStatus>
+> = APIResultBase<ClientFn, SuccessStatus>
+
+// 例外を握って `{ ok: false, status: 500, body: <メッセージ> }` に落とす高階関数。
+// Server Action / クライアント関数の実装から try/catch による 500 フォールバックの
+// 重複を無くすために使う
+export function fetcher<T, U, V extends unknown[]>(
+  fn: (...args: V) => Promise<Result<T, U>>
+) {
+  return async (...args: V): Promise<Result<T, U | string>> => {
+    try {
+      return await fn(...args)
+    } catch (error) {
+      logger.error({ label: 'fetcher', body: 'fetch error', error })
+      return {
+        ok: false,
+        status: 500,
+        body: `${error}`
+      }
+    }
+  }
+}
+
+// RFC9457 Problem Details (`detail`) からのエラーメッセージ抽出の単一入口。
+// エラー表示は必ずこのヘルパー経由に統一し、`body.detail` 等を直接参照しない
+export function extractErrorMessage(body: unknown): string {
+  if (isRecord(body) && typeof body.detail === 'string') {
+    return body.detail
+  }
+  return 'エラーが発生しました'
+}

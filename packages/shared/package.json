@@ -10,6 +10,14 @@
     "./src/index": {
       "types": "./dist/src/index.d.ts",
       "default": "./dist/src/index.js"
+    },
+    "./src/prisma": {
+      "types": "./dist/src/prisma.d.ts",
+      "default": "./dist/src/prisma.js"
+    },
+    "./src/schema": {
+      "types": "./dist/src/schema.d.ts",
+      "default": "./dist/src/schema.js"
     }
   },
   "scripts": {
@@ -24,10 +32,11 @@
     "db-migrate:deploy": "prisma migrate deploy",
     "format-db": "prisma format",
     "test": "",
+    "typecheck-bin": "tsc --noEmit -p tsconfig.bin.json",
     "preformat": "npm run format-tsp && npm run format-db",
     "format": "vp fmt package.json src bin test --write",
     "format-check": "vp fmt package.json src bin test --check",
-    "lint": "vp lint src bin test",
+    "lint": "npm run compile && vp lint src bin test && node --experimental-strip-types ./bin/check-missing-4xx-responses.ts",
     "lint-fix": "vp lint src bin test --fix"
   },
   "devDependencies": {

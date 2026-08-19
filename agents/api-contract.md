@@ -58,6 +58,13 @@ Hono のルーティングはパスパラメータを `:id` で表す(例: `/api
 - `api-contract/require-httpexception-res` → 「既知の罠: `cause` では拡張フィールドが届かない」
 - `api-contract/require-validator-for-param-query` → validator を経由しない `req.param()`/`req.query()` の直接呼び出し禁止
 
+パッケージ横断の規約は `lint-rules/coding-style.ts`(プラグイン名 `coding-style`)が強制する。
+
+- `coding-style/no-process-env-outside-config` → `process.env` の参照を config ファイル(`config.ts` / `config.server.ts` 等)に集約する(テストファイルは対象外)
+- `coding-style/enforce-zod-entrypoint` → zod の entrypoint をパッケージごとに強制する(client は `zod/mini`、api は `zod`)
+
+ルールを追加・変更したら、違反例・準拠例を `lint-rules/run-tests.ts` に追加し、`npm run test-lint-rules` を通すこと(CI では `ci-api.yml` の lint job が実行する)。
+
 ## 新しい lint / 検査ルールの段階導入手順
 
 `check-missing-4xx-responses` のような新しい機械検査を導入する際、既存コードに違反が残っている状態でいきなり CI を落とすと、無関係な PR まで巻き込んで止まってしまう。以下の順で導入する。

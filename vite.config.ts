@@ -12,7 +12,7 @@ export default defineConfig({
     // api の handler / validator 実装規約(agents/api-contract.md)を機械的に強制する
     // カスタム JS plugin。ルールの有効化(severity)は overrides 側で
     // packages/api/src 配下に限定して行う(他パッケージでは無効のまま)。
-    jsPlugins: ['./lint-rules/index.ts'],
+    jsPlugins: ['./lint-rules/index.ts', './lint-rules/coding-style.ts'],
     rules: {
       // 認証のローカルスタブ実装(local-provider/local-verifier)への import が
       // 存在する間は warning を出す。実プロバイダに差し替えて import が無くなれば消える。
@@ -37,6 +37,15 @@ export default defineConfig({
       ]
     },
     overrides: [
+      {
+        // パッケージ横断のコーディング規約(AGENTS.md)。config/test ファイルの除外は
+        // ルール実装側(lint-rules/rules/)がファイル名で判定する。
+        files: ['packages/api/src/**', 'packages/client/src/**', 'packages/task/src/**'],
+        rules: {
+          'coding-style/no-process-env-outside-config': 'error',
+          'coding-style/enforce-zod-entrypoint': 'error'
+        }
+      },
       {
         files: ['**/*.test.ts'],
         rules: {

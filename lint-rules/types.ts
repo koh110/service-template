@@ -27,6 +27,7 @@ export type MemberExpressionNode = Parameters<VisitorHandler<'MemberExpression'>
 export type ObjectExpressionNode = Parameters<VisitorHandler<'ObjectExpression'>>[0]
 export type PropertyNode = Parameters<VisitorHandler<'Property'>>[0]
 export type IdentifierNode = Parameters<VisitorHandler<'Identifier'>>[0]
+export type ImportDeclarationNode = Parameters<VisitorHandler<'ImportDeclaration'>>[0]
 
 /**
  * `oxlint` はプラグインをファイルパス(`jsPlugins`)から動的にロードするだけで、

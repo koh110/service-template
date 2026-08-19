@@ -31,6 +31,7 @@ jobs:
           node-version: 24.x
       - run: npm ci
       - run: npm run lint -w ${{ env.WORKSPACE_NAME }}
+      - run: npm run test-lint-rules
   test:
     runs-on: ubuntu-latest
     strategy:

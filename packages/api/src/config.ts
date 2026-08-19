@@ -28,3 +28,5 @@ if (!process.env.DATABASE_URL) {
 export const DATABASE = {
   url: process.env.DATABASE_URL
 } as const
+
+export const LOCAL_PROXY_CONFIG_DIR = process.env.LOCAL_PROXY_CONFIG_DIR

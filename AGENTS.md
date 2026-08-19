@@ -7,6 +7,7 @@
   - `init.sh` は `npm i` → `npm run init`(ブランチ名から `COMPOSE_PROJECT_NAME` を生成)→ `docker compose up -d --wait` → migration → `shared` の build まで行う
   - worktree を削除する前には `cleanup.sh` を実行すること(孤児コンテナ/ネットワークが残るのを防ぐ)。DB データは named volume に残るので、完全にリセットしたい場合は `docker compose down -v` を使う
 - use npm workspaces
+- 機械的に検査できる規約は自然言語ではなく lint(root `vite.config.ts` + `lint-rules/`)で強制し、このファイルには書かない。`lint-rules/` を変更したら `npm run test-lint-rules`(違反例・準拠例のハーネス)を通すこと
 - lint のカスタムルールは `lint-rules/` に置く(追加・変更時は `agents/api-contract.md` の「lint による機械強制」を読む)
 - O(N) となる処理を避け、O(1) となるように処理を記述する
 - 実装完了の条件: 変更したパッケージに対応する CI ワークフロー(`.github/workflows/ci-{api,client,shared,task}.yml`)に書かれているコマンドをローカルで実行し、build/lint/test がエラーなく通ること。CI と異なるコマンドを実行して「通った」と判断しない
@@ -22,7 +23,6 @@
 ## JavaScript Guiedelines
 
 - arrow functionを利用する場合は改行, `{}`, `return` を省略せずに記述する
-- 環境変数を扱う処理はconfig.jsにまとめる
 - import/requireは相対パスを利用する
 
 ## React Guidelines
@@ -45,7 +45,6 @@
 - 推論できる型は推論を優先して採用し、再定義を禁じる
 - interfaceよりtypeを優先して利用する
 - type assertion を避ける
-- interfaceは利用せずtypeを利用する
 - 可能な場合は必ず `as const` を記述する
 - 新しく型を手書きする前に `agents/type-inference.md` を読む(生成スキーマ・`ComponentProps`・Prisma payload から導出できないか確認する)
 
@@ -60,10 +59,6 @@
 ## API Contract Guidelines
 
 - api の handler / validator を書くときは `agents/api-contract.md` を読む(ルーティング型安全化の3点セット、バリデーション失敗時は `throw createHttpException` に統一する理由、400 レスポンス変更は公開契約変更であること)
-
-## Validation Guidelines
-
-- zod は api では `zod`、client では `zod/mini` を import する(client バンドルサイズのため)
 
 ## API 通信パターン
 

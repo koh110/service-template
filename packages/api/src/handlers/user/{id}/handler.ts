@@ -1,4 +1,4 @@
-import type { schema } from 'shared/src/index'
+import type * as schema from 'shared/src/schema'
 import { z } from 'zod'
 import type { createClient } from '../../../lib/database.js'
 import { createHttpException } from '../../../lib/wrap.js'
@@ -19,10 +19,14 @@ export async function updateUser({
   id: number
   body: UpdateUserApi['requestBody']['content']['application/json']
 }): Promise<UpdateUserResponse['200']['content']['application/json']> {
-  const res = await dbClient.user.findFirst({ where: { id } })
+  const res = await dbClient.user.findUnique({ where: { id } })
   if (!res) {
-    throw createHttpException(404, {
+    throw createHttpException<
+      UpdateUserResponse['404']['content']['application/json']
+    >(404, {
+      type: 'about:blank',
       title: 'Not Found',
+      status: 404,
       detail: 'User not found'
     })
   }

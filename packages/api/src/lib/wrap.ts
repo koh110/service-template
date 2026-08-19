@@ -18,17 +18,16 @@ function isProblemDetails(value: unknown): value is ProblemDetails {
   )
 }
 
-export function createHttpException(
+export function createHttpException<T extends Record<string, unknown>>(
   status: NonNullable<ConstructorParameters<typeof HTTPException>[0]>,
-  body: { title: string; detail?: string; type?: string }
-) {
-  const problem: ProblemDetails = {
-    type: body.type ?? 'about:blank',
-    title: body.title,
-    status,
-    detail: body.detail
-  }
-  return new HTTPException(status, { message: body.title, cause: problem })
+  body: T
+): HTTPException {
+  return new HTTPException(status, {
+    res: new Response(JSON.stringify(body), {
+      status,
+      headers: { 'Content-Type': 'application/json' }
+    })
+  })
 }
 
 export async function handleError(error: Error, c: Context) {
@@ -39,6 +38,13 @@ export async function handleError(error: Error, c: Context) {
       body: error.message,
       meta: { requestId, error }
     })
+    // res 付きの HTTPException(createHttpException 経由)はレスポンスの
+    // 形状(拡張フィールドを含む)が確定しているため、そのまま返す。
+    // cause 経由では拡張フィールドがクライアントに届かない罠があるため、
+    // createHttpException は必ず res 付きで生成する
+    if (error.res) {
+      return error.getResponse()
+    }
     const problem = isProblemDetails(error.cause)
       ? error.cause
       : { type: 'about:blank', title: error.message, status: error.status }

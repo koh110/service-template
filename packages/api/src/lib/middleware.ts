@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { cors } from 'hono/cors'
 import { createMiddleware } from 'hono/factory'
+import type * as schema from 'shared/src/schema'
 import { CORS_OPTIONS } from '../config.js'
 import { localTokenVerifier } from '../lib/auth/local-verifier.js'
 import type { TokenVerifier } from '../lib/auth/token-verifier.js'
@@ -9,6 +10,8 @@ import { createHttpException } from './wrap.js'
 
 // 実プロバイダ(Firebase Admin 等)に差し替える場合はここを変更する
 const tokenVerifier: TokenVerifier = localTokenVerifier
+
+type UnauthorizedError = schema.components['schemas']['UnauthorizedError']
 
 declare module 'hono' {
   interface ContextVariableMap {
@@ -46,15 +49,19 @@ export function verifyAuthorizationMiddleware() {
   }>(async (c, next) => {
     const authorization = c.req.header('Authorization')
     if (!authorization) {
-      throw createHttpException(401, {
+      throw createHttpException<UnauthorizedError>(401, {
+        type: 'about:blank',
         title: 'Unauthorized',
+        status: 401,
         detail: 'Authorization error'
       })
     }
     const [, sessionToken] = authorization.split(' ')
     if (!sessionToken) {
-      throw createHttpException(401, {
+      throw createHttpException<UnauthorizedError>(401, {
+        type: 'about:blank',
         title: 'Unauthorized',
+        status: 401,
         detail: 'Authorization error'
       })
     }
@@ -67,8 +74,10 @@ export function verifyAuthorizationMiddleware() {
         body: 'token verification failed',
         meta: { error }
       })
-      throw createHttpException(401, {
+      throw createHttpException<UnauthorizedError>(401, {
+        type: 'about:blank',
         title: 'Unauthorized',
+        status: 401,
         detail: 'Authorization error'
       })
     }

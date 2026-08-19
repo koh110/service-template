@@ -1,5 +1,6 @@
-import { Prisma } from 'shared/src/index'
+import { Prisma } from 'shared/src/prisma'
 import { test as baseTest, beforeAll, expect } from 'vite-plus/test'
+import { createUserSeed } from '../../../test/seeds/index.js'
 import { getTestDbClient, truncateTables } from '../../../test/util.js'
 import { listUser } from './handler.js'
 
@@ -23,8 +24,8 @@ const test = baseTest.extend<{
 }>({
   seeds: async ({ task }, use) => {
     const data = [
-      { name: `${task.id}_user1` },
-      { name: `${task.id}_user2` }
+      createUserSeed({ name: 'user1' }, task.id),
+      createUserSeed({ name: 'user2' }, task.id)
     ] satisfies Prisma.userCreateManyArgs['data']
 
     const res = await dbClient.user.createMany({ data })

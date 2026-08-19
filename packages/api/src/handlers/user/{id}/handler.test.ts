@@ -1,5 +1,6 @@
-import { Prisma } from 'shared/src/index'
+import { Prisma } from 'shared/src/prisma'
 import { test as baseTest, beforeAll, expect } from 'vite-plus/test'
+import { createUserSeed } from '../../../../test/seeds/index.js'
 import { getTestDbClient, truncateTables } from '../../../../test/util.js'
 import { updateUser } from './handler.js'
 
@@ -23,8 +24,8 @@ const test = baseTest.extend<{
 }>({
   seeds: async ({ task }, use) => {
     const data = [
-      { name: `${task.id}_user1` },
-      { name: `${task.id}_user2` }
+      createUserSeed({ name: 'user1' }, task.id),
+      createUserSeed({ name: 'user2' }, task.id)
     ] satisfies Prisma.userCreateManyArgs['data']
 
     const res = await dbClient.user.createMany({ data })
@@ -43,22 +44,22 @@ const test = baseTest.extend<{
 
 test('updateUser: success', async ({ seeds }) => {
   const target = seeds.users[0]
-  const before = await dbClient.user.findFirst({ where: { id: target.id } })
+  const before = await dbClient.user.findUnique({ where: { id: target.id } })
 
   const updateValue = 'updated_name'
   await updateUser({ dbClient, id: target.id, body: { name: updateValue } })
 
-  const after = await dbClient.user.findFirst({ where: { id: target.id } })
+  const after = await dbClient.user.findUnique({ where: { id: target.id } })
   expect(before!.name).not.toBe(after!.name)
   expect(after!.name).toBe(updateValue)
 })
 
 test('updateUser: undefined', async ({ seeds }) => {
   const target = seeds.users[0]
-  const before = await dbClient.user.findFirst({ where: { id: target.id } })
+  const before = await dbClient.user.findUnique({ where: { id: target.id } })
 
   await updateUser({ dbClient, id: target.id, body: { name: undefined } })
 
-  const after = await dbClient.user.findFirst({ where: { id: target.id } })
+  const after = await dbClient.user.findUnique({ where: { id: target.id } })
   expect(before!.name).toBe(after!.name)
 })

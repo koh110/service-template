@@ -5,6 +5,8 @@ on:
     paths:
       - 'packages/client/**'
       - 'package.json'
+      - 'vite.config.ts'
+      - 'lint-rules/**'
     branches: [ main ]
   pull_request:
     paths:
@@ -12,6 +14,8 @@ on:
       - 'packages/shared/**'
       - 'packages/client/**'
       - 'package.json'
+      - 'vite.config.ts'
+      - 'lint-rules/**'
     branches: [ main ]
 
 env:

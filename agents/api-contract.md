@@ -50,6 +50,14 @@ Hono は `res` 付きの `HTTPException` を `app.onError` 無しでも正しく
 
 Hono のルーティングはパスパラメータを `:id` で表す(例: `/api/user/:id`)が、TypeSpec/OpenAPI 側は `{id}` で表す(`/api/user/{id}`)。この表記の違いにより、`app.put('/api/user/:id' satisfies keyof schema.paths, ...)` のように書いても `satisfies keyof schema.paths` は効かない(文字列リテラルが一致しないため)。この場合は `app.put('/api/user/:id', ...)` とし、代わりに `UpdateUserApi = schema.paths['/api/user/{id}']['put']` のように型側の参照で契約と紐付ける。
 
+## lint による機械強制
+
+このファイルに書かれている規約のうち、以下の3つは oxlint の JS plugin(`lint-rules/`、プラグイン名 `api-contract`)によって機械的に強制されている(`vite.config.ts` の `lint.jsPlugins` / `lint.overrides` で `packages/api/src/handlers/**` または `packages/api/src/**` に適用)。違反があると `vp lint`(`npm run lint -w api`)が error で落ちる。
+
+- `api-contract/require-validator-return-type`: 「validator の戻り値型注釈」(上記3点セットの3)を検出する。`validator('json' | 'query' | 'param', fn)` の `fn` がアロー関数・関数式で戻り値型注釈が無い場合に検出する(`fn` が named function への参照のみの場合は検出できないため、その場合は関数宣言側で戻り値型注釈を付けること)
+- `api-contract/require-httpexception-res`: 「`cause` では拡張フィールドが届かない」を検出する。`new HTTPException(status, opts)` の `opts` に `cause`/`errors` があり `res` が無い場合に検出する
+- `api-contract/require-validator-for-param-query`: `<expr>.req.param(...)` / `<expr>.req.query(...)` の直接呼び出し(`validator()` を経由しない生の値の利用)を検出する
+
 ## 新しい lint / 検査ルールの段階導入手順
 
 `check-missing-4xx-responses` のような新しい機械検査を導入する際、既存コードに違反が残っている状態でいきなり CI を落とすと、無関係な PR まで巻き込んで止まってしまう。以下の順で導入する。

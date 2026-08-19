@@ -7,6 +7,7 @@
   - `init.sh` は `npm i` → `npm run init`(ブランチ名から `COMPOSE_PROJECT_NAME` を生成)→ `docker compose up -d --wait` → migration → `shared` の build まで行う
   - worktree を削除する前には `cleanup.sh` を実行すること(孤児コンテナ/ネットワークが残るのを防ぐ)。DB データは named volume に残るので、完全にリセットしたい場合は `docker compose down -v` を使う
 - use npm workspaces
+- lint のカスタムルール(oxlint の JS plugin)は `lint-rules/` に置き、ルート `vite.config.ts` の `lint.jsPlugins` / `lint.overrides` から読み込む(api の実装規約を機械強制する目的。詳細は `agents/api-contract.md` の「lint による機械強制」を参照)
 - O(N) となる処理を避け、O(1) となるように処理を記述する
 - 実装完了の条件: 変更したパッケージに対応する CI ワークフロー(`.github/workflows/ci-{api,client,shared,task}.yml`)に書かれているコマンドをローカルで実行し、build/lint/test がエラーなく通ること。CI と異なるコマンドを実行して「通った」と判断しない
 - 特定の作業をするときだけ必要な詳細ガイドラインは `agents/` 配下に置き、この AGENTS.md からは「いつ読むか」を1行で指す

@@ -9,6 +9,10 @@ export default defineConfig({
   },
   lint: {
     ignorePatterns: ['**/dist/**'],
+    // api の handler / validator 実装規約(agents/api-contract.md)を機械的に強制する
+    // カスタム JS plugin。ルールの有効化(severity)は overrides 側で
+    // packages/api/src 配下に限定して行う(他パッケージでは無効のまま)。
+    jsPlugins: ['./lint-rules/index.ts'],
     rules: {
       // 認証のローカルスタブ実装(local-provider/local-verifier)への import が
       // 存在する間は warning を出す。実プロバイダに差し替えて import が無くなれば消える。
@@ -51,6 +55,22 @@ export default defineConfig({
               ]
             }
           ]
+        }
+      },
+      {
+        // validator コールバックの戻り値型注釈、req.param()/req.query() 直接呼び出し禁止は
+        // handler の実装規約(agents/api-contract.md)であるため handlers 配下に限定する。
+        files: ['packages/api/src/handlers/**'],
+        rules: {
+          'api-contract/require-validator-return-type': 'error',
+          'api-contract/require-validator-for-param-query': 'error'
+        }
+      },
+      {
+        // HTTPException は features/lib 等 handlers 外からも投げうるため api パッケージ全体に適用する。
+        files: ['packages/api/src/**'],
+        rules: {
+          'api-contract/require-httpexception-res': 'error'
         }
       }
     ]

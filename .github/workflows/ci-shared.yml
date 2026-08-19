@@ -5,12 +5,16 @@ on:
     paths:
       - 'packages/shared/**'
       - 'package.json'
+      - 'vite.config.ts'
+      - 'lint-rules/**'
     branches: [ main ]
   pull_request:
     paths:
       - '.github/workflows/ci-shared.yml'
       - 'packages/shared/**'
       - 'package.json'
+      - 'vite.config.ts'
+      - 'lint-rules/**'
     branches: [ main ]
 
 env:

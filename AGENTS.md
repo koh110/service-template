@@ -7,6 +7,7 @@
   - `init.sh` は `npm i` → `npm run init`(ブランチ名から `COMPOSE_PROJECT_NAME` を生成)→ `docker compose up -d --wait` → migration → `shared` の build まで行う
   - worktree を削除する前には `cleanup.sh` を実行すること(孤児コンテナ/ネットワークが残るのを防ぐ)。DB データは named volume に残るので、完全にリセットしたい場合は `docker compose down -v` を使う
 - use npm workspaces
+- lint のカスタムルールは `lint-rules/` に置く(追加・変更時は `agents/api-contract.md` の「lint による機械強制」を読む)
 - O(N) となる処理を避け、O(1) となるように処理を記述する
 - 実装完了の条件: 変更したパッケージに対応する CI ワークフロー(`.github/workflows/ci-{api,client,shared,task}.yml`)に書かれているコマンドをローカルで実行し、build/lint/test がエラーなく通ること。CI と異なるコマンドを実行して「通った」と判断しない
 - 特定の作業をするときだけ必要な詳細ガイドラインは `agents/` 配下に置き、この AGENTS.md からは「いつ読むか」を1行で指す
@@ -34,6 +35,7 @@
 - ReactのコンポーネントはArrow Functionではなく通常のFunctionを利用する
 - propsはinterfaceではなくtypeで定義する
 - コンポーネント表示/非表示の制御はActivityを利用する
+- フォームを実装するときは `agents/react-form.md` を読む(React Hook Form の規約)
 
 ## TypeScript Guidelines
 
@@ -54,6 +56,19 @@
 ## Prisma Guidelines
 
 - `packages/shared/prisma/schema.prisma` を編集するとき、または DB アクセスを行う関数を追加/変更するときは `agents/prisma-guidelines.md` を読む(`onDelete` の使い分け、enum 化の基準、`tx` 引数パターン)
+
+## API Contract Guidelines
+
+- api の handler / validator を書くときは `agents/api-contract.md` を読む(ルーティング型安全化の3点セット、バリデーション失敗時は `throw createHttpException` に統一する理由、400 レスポンス変更は公開契約変更であること)
+
+## Validation Guidelines
+
+- zod は api では `zod`、client では `zod/mini` を import する(client バンドルサイズのため)
+
+## API 通信パターン
+
+- GET は Server Actions(`Result` 型を返す)、POST/PUT/DELETE は `/proxy/api/` 経由のクライアントサイド関数を使う。`useActionState` / `<form action>` は使わない
+- エラー表示は client の `extractErrorMessage(body)` を単一入口とし、レスポンス形状(`body.detail` 等)を直接参照しない
 
 ### client
 
@@ -78,6 +93,7 @@
 - bodyはvalidatorとzodで必ずバリデーションを行う
 - ループ処理の内部でINSERT/UPDATE/DELETEを繰り返し実行することを禁じる
   - bulk insert/update/deleteを優先して利用する
+- HTTP に依存しないドメインロジックは `src/features/<domain>/` に動詞単位のファイル(`validate.ts`/`save.ts` 等)で切り出しテストを隣接させる。handler はリクエスト/レスポンス変換と features/ の呼び出しに徹する
 
 ### shared
 
@@ -96,3 +112,4 @@
   1. npm run build -w shared
   2. npm run build -w task
 - タスクを追加する場合は `src/tasks/` に実装を置き、`src/index.ts` の switch から `await import()` で遅延読み込みする(あるタスクの実行に他タスク用の env を要求しないようにするため)
+- 1タスク = 1ディレクトリとし、`index`(統合)/`db`(永続化)/`lib`(純粋関数)/通知 に分解する。タスク別 config は部品ローダーを合成する `loadXxxConfig()` で組み立てる

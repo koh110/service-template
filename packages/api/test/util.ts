@@ -1,7 +1,7 @@
 import cp from 'node:child_process'
 import { promisify } from 'node:util'
 import { PrismaPg } from '@prisma/adapter-pg'
-import { type Prisma, PrismaClient } from 'shared/src/index'
+import { type Prisma, PrismaClient } from 'shared/src/prisma'
 
 const execAsync = promisify(cp.exec)
 

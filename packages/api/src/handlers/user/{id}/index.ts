@@ -1,7 +1,8 @@
 import { validator } from 'hono/validator'
-import type { schema } from 'shared/src/index'
+import type * as schema from 'shared/src/schema'
 import { z } from 'zod'
 import { verifyAuthorizationMiddleware } from '../../../lib/middleware.js'
+import { createHttpException } from '../../../lib/wrap.js'
 import { updateUser, updateUserBodySchema } from './handler.js'
 
 export function createRoute(
@@ -13,36 +14,37 @@ export function createRoute(
   app.put(
     '/api/user/:id',
     verifyAuthorizationMiddleware(),
-    validator('param', (value, c) => {
+    validator('param', (value): { id: number } => {
       const parsedId = z.coerce.number().safeParse(value.id)
       if (!parsedId.success) {
-        return c.json(
-          {
-            type: 'about:blank',
-            title: 'Bad Request',
-            status: 400,
-            detail: parsedId.error.issues.map((issue) => issue.message).join(', ')
-          } satisfies UpdateUserResponse['400']['content']['application/json'],
-          400
-        )
+        throw createHttpException<
+          UpdateUserResponse['400']['content']['application/json']
+        >(400, {
+          type: 'about:blank',
+          title: 'Bad Request',
+          status: 400,
+          detail: parsedId.error.issues.map((issue) => issue.message).join(', ')
+        })
       }
       return { id: parsedId.data }
     }),
-    validator('json', (value, c) => {
-      const parsed = updateUserBodySchema.safeParse(value)
-      if (!parsed.success) {
-        return c.json(
-          {
+    validator(
+      'json',
+      (value): UpdateUserApi['requestBody']['content']['application/json'] => {
+        const parsed = updateUserBodySchema.safeParse(value)
+        if (!parsed.success) {
+          throw createHttpException<
+            UpdateUserResponse['400']['content']['application/json']
+          >(400, {
             type: 'about:blank',
             title: 'Bad Request',
             status: 400,
             detail: parsed.error.issues.map((issue) => issue.message).join(', ')
-          } satisfies UpdateUserResponse['400']['content']['application/json'],
-          400
-        )
+          })
+        }
+        return parsed.data
       }
-      return parsed.data
-    }),
+    ),
     async (c) => {
       const id = c.req.valid('param').id
       const body = c.req.valid('json')

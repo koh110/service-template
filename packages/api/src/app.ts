@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import type { schema } from 'shared/src/index'
+import type * as schema from 'shared/src/schema'
 import * as user from './handlers/user/index.js'
 import { createClient } from './lib/database.js'
 import { accessLogMiddleware, corsMiddleware } from './lib/middleware.js'

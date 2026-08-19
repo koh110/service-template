@@ -1,4 +1,4 @@
-import type { schema } from 'shared/src/index'
+import type * as schema from 'shared/src/schema'
 import { verifyAuthorizationMiddleware } from '../../lib/middleware.js'
 import { createRoute as createRouteId } from './{id}/index.js'
 import { listUser } from './handler.js'

@@ -16,7 +16,6 @@ on:
       - 'package.json'
       - 'vite.config.ts'
       - 'lint-rules/**'
-    branches: [ main ]
 
 env:
   WORKSPACE_NAME: task

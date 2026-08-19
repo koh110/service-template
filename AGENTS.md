@@ -7,7 +7,7 @@
   - `init.sh` は `npm i` → `npm run init`(ブランチ名から `COMPOSE_PROJECT_NAME` を生成)→ `docker compose up -d --wait` → migration → `shared` の build まで行う
   - worktree を削除する前には `cleanup.sh` を実行すること(孤児コンテナ/ネットワークが残るのを防ぐ)。DB データは named volume に残るので、完全にリセットしたい場合は `docker compose down -v` を使う
 - use npm workspaces
-- lint のカスタムルール(oxlint の JS plugin)は `lint-rules/` に置き、ルート `vite.config.ts` の `lint.jsPlugins` / `lint.overrides` から読み込む(api の実装規約を機械強制する目的。詳細は `agents/api-contract.md` の「lint による機械強制」を参照)
+- lint のカスタムルールは `lint-rules/` に置く(追加・変更時は `agents/api-contract.md` の「lint による機械強制」を読む)
 - O(N) となる処理を避け、O(1) となるように処理を記述する
 - 実装完了の条件: 変更したパッケージに対応する CI ワークフロー(`.github/workflows/ci-{api,client,shared,task}.yml`)に書かれているコマンドをローカルで実行し、build/lint/test がエラーなく通ること。CI と異なるコマンドを実行して「通った」と判断しない
 - 特定の作業をするときだけ必要な詳細ガイドラインは `agents/` 配下に置き、この AGENTS.md からは「いつ読むか」を1行で指す
@@ -35,11 +35,7 @@
 - ReactのコンポーネントはArrow Functionではなく通常のFunctionを利用する
 - propsはinterfaceではなくtypeで定義する
 - コンポーネント表示/非表示の制御はActivityを利用する
-- React Hook Form を導入する場合(フォームを実装するとき)は以下に従う
-  - 各フィールドは `register` を直接バインドする(`watch` + `setValue` による手動ハンドリングを禁じる)
-  - 初期値は `useState` 等で持たず `defaultValue` を使う
-  - checkbox の配列は `string[]` として扱う
-  - フォーム全体のリセットは `reset()` の手動呼び出しではなく、`key` を更新してコンポーネントごと再マウントする方式を優先する
+- フォームを実装するときは `agents/react-form.md` を読む(React Hook Form の規約)
 
 ## TypeScript Guidelines
 
@@ -67,12 +63,12 @@
 
 ## Validation Guidelines
 
-- zod は api(`zod`)と client(`zod/mini`)で使い分ける。api はサーバサイドでバンドルサイズを気にする必要が薄いためフル機能の `zod` を、client はクライアントバンドルに含まれるため軽量な `zod/mini` を使う
+- zod は api では `zod`、client では `zod/mini` を import する(client バンドルサイズのため)
 
 ## API 通信パターン
 
-- GET は Server Actions(`'use server'`。`shared/src/index` の `Result` 型を返す)、POST/PUT/DELETE は `/proxy/api/...`(`packages/client/src/app/proxy/api/[...path]/route.ts`)経由のクライアントサイド関数(`packages/client/src/app/_lib/api.client.ts` の `client()`)を使う。`useActionState` / `<form action={...}>` は使わない(状態遷移やエラー表示をクライアント側で細かく制御するため)
-- エラー表示は `packages/client/src/app/_lib/api.ts` の `extractErrorMessage(body)` を単一入口とする。`body.detail` 等のレスポンス形状をコンポーネント側で直接参照しない(RFC9457 の `detail` フィールド名変更やエラー形状の拡張に強くするため)
+- GET は Server Actions(`Result` 型を返す)、POST/PUT/DELETE は `/proxy/api/` 経由のクライアントサイド関数を使う。`useActionState` / `<form action>` は使わない
+- エラー表示は client の `extractErrorMessage(body)` を単一入口とし、レスポンス形状(`body.detail` 等)を直接参照しない
 
 ### client
 
@@ -97,7 +93,7 @@
 - bodyはvalidatorとzodで必ずバリデーションを行う
 - ループ処理の内部でINSERT/UPDATE/DELETEを繰り返し実行することを禁じる
   - bulk insert/update/deleteを優先して利用する
-- HTTP に依存しないドメインロジック(バリデーション、DB アクセスを伴う処理など)は `src/features/<domain>/` 以下に動詞単位のファイル(`validate.ts` / `save.ts` 等)として切り出し、テストは隣接させる(`validate.test.ts` 等)。handler(`handlers/**`)はリクエスト/レスポンスの変換と `features/` の呼び出しに徹し、薄く保つ
+- HTTP に依存しないドメインロジックは `src/features/<domain>/` に動詞単位のファイル(`validate.ts`/`save.ts` 等)で切り出しテストを隣接させる。handler はリクエスト/レスポンス変換と features/ の呼び出しに徹する
 
 ### shared
 
@@ -116,4 +112,4 @@
   1. npm run build -w shared
   2. npm run build -w task
 - タスクを追加する場合は `src/tasks/` に実装を置き、`src/index.ts` の switch から `await import()` で遅延読み込みする(あるタスクの実行に他タスク用の env を要求しないようにするため)
-- 1タスク = 1ディレクトリとし、内部を役割ごとに分解する: `index`(全体を統合するエントリポイント)/ `db`(永続化処理)/ `lib`(純粋関数)/ 通知処理(Slack 通知等、あれば)。タスク別の config が必要な場合は、共通 config を直接 import せず、private な部品ローダーを合成する `loadXxxConfig()` パターンで組み立てる(そのタスクの実行に無関係な env 変数を要求しないため)
+- 1タスク = 1ディレクトリとし、`index`(統合)/`db`(永続化)/`lib`(純粋関数)/通知 に分解する。タスク別 config は部品ローダーを合成する `loadXxxConfig()` で組み立てる

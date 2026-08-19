@@ -52,11 +52,11 @@ Hono のルーティングはパスパラメータを `:id` で表す(例: `/api
 
 ## lint による機械強制
 
-このファイルに書かれている規約のうち、以下の3つは oxlint の JS plugin(`lint-rules/`、プラグイン名 `api-contract`)によって機械的に強制されている(`vite.config.ts` の `lint.jsPlugins` / `lint.overrides` で `packages/api/src/handlers/**` または `packages/api/src/**` に適用)。違反があると `vp lint`(`npm run lint -w api`)が error で落ちる。
+`lint-rules/`(プラグイン名 `api-contract`)が以下を強制する。
 
-- `api-contract/require-validator-return-type`: 「validator の戻り値型注釈」(上記3点セットの3)を検出する。`validator('json' | 'query' | 'param', fn)` の `fn` がアロー関数・関数式で戻り値型注釈が無い場合に検出する(`fn` が named function への参照のみの場合は検出できないため、その場合は関数宣言側で戻り値型注釈を付けること)
-- `api-contract/require-httpexception-res`: 「`cause` では拡張フィールドが届かない」を検出する。`new HTTPException(status, opts)` の `opts` に `cause`/`errors` があり `res` が無い場合に検出する
-- `api-contract/require-validator-for-param-query`: `<expr>.req.param(...)` / `<expr>.req.query(...)` の直接呼び出し(`validator()` を経由しない生の値の利用)を検出する
+- `api-contract/require-validator-return-type` → 「ルーティング型安全化の3点セット」の3(validator の戻り値型注釈)。既知の限界: `fn` が named function への参照のみの場合は検出対象外なので、宣言側で戻り値型注釈を付けること
+- `api-contract/require-httpexception-res` → 「既知の罠: `cause` では拡張フィールドが届かない」
+- `api-contract/require-validator-for-param-query` → validator を経由しない `req.param()`/`req.query()` の直接呼び出し禁止
 
 ## 新しい lint / 検査ルールの段階導入手順
 

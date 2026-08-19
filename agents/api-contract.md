@@ -63,7 +63,7 @@ Hono のルーティングはパスパラメータを `:id` で表す(例: `/api
 - `coding-style/no-process-env-outside-config` → `process.env` の参照を config ファイル(`config.ts` / `config.server.ts` 等)に集約する(テストファイルは対象外)
 - `coding-style/enforce-zod-entrypoint` → zod の entrypoint をパッケージごとに強制する(client は `zod/mini`、api は `zod`)
 
-ルールを追加・変更したら、違反例・準拠例を `lint-rules/run-tests.ts` に追加し、`npm run test-lint-rules` を通すこと(CI では `ci-api.yml` の lint job が実行する)。
+ルールを追加・変更したら、違反例・準拠例を `lint-rules/run-tests.ts` に追加し、`npm run test-lint-rules` を通すこと(CI では `ci-lint-rules.yml` が実行する)。
 
 ## 新しい lint / 検査ルールの段階導入手順
 

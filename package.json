@@ -5,6 +5,7 @@
   ],
   "scripts": {
     "init": "npm run init-local -w bin",
+    "test-lint-rules": "node --experimental-strip-types lint-rules/run-tests.ts",
     "lint": "npm run lint --workspaces --if-present",
     "format": "npm run format --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",

@@ -10,7 +10,7 @@ const CONFIG_FILE = /(^|\/)config(\.[\w-]+)*\.(ts|tsx|js|mjs|mts)$/
 const TEST_FILE = /(\.test\.(ts|tsx)$|(^|\/)test\/)/
 
 const MESSAGE =
-  '環境変数の参照は config ファイル(config.ts / config.server.ts 等)に集約してください(agents/api-contract.md 参照)'
+  '環境変数の参照は config ファイル(config.ts / config.server.ts 等)に集約してください(agents/lint-rules.md 参照)'
 
 function isProcessEnvAccess(node: MemberExpressionNode): boolean {
   return (

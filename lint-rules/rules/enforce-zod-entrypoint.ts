@@ -11,13 +11,13 @@ const RESTRICTIONS = [
     packagePath: '/packages/client/',
     banned: 'zod',
     message:
-      "client では 'zod' ではなく 'zod/mini' を import してください(バンドルサイズのため。agents/api-contract.md 参照)"
+      "client では 'zod' ではなく 'zod/mini' を import してください(バンドルサイズのため。agents/lint-rules.md 参照)"
   },
   {
     packagePath: '/packages/api/',
     banned: 'zod/mini',
     message:
-      "api では 'zod/mini' ではなく 'zod' を import してください(agents/api-contract.md 参照)"
+      "api では 'zod/mini' ではなく 'zod' を import してください(agents/lint-rules.md 参照)"
   }
 ] as const
 

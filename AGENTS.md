@@ -8,7 +8,7 @@
   - worktree を削除する前には `cleanup.sh` を実行すること(孤児コンテナ/ネットワークが残るのを防ぐ)。DB データは named volume に残るので、完全にリセットしたい場合は `docker compose down -v` を使う
 - use npm workspaces
 - 機械的に検査できる規約は自然言語ではなく lint(root `vite.config.ts` + `lint-rules/`)で強制し、このファイルには書かない。`lint-rules/` を変更したら `npm run test-lint-rules`(違反例・準拠例のハーネス)を通すこと
-- lint のカスタムルールは `lint-rules/` に置く(追加・変更時は `agents/api-contract.md` の「lint による機械強制」を読む)
+- lint のカスタムルールは `lint-rules/` に置く(追加・変更時は `agents/lint-rules.md` を読む。api の handler / validator 固有ルールは `agents/api-contract.md` を読む)
 - O(N) となる処理を避け、O(1) となるように処理を記述する
 - 実装完了の条件: 変更したパッケージに対応する CI ワークフロー(`.github/workflows/ci-{api,client,shared,task}.yml`)に書かれているコマンドをローカルで実行し、build/lint/test がエラーなく通ること。CI と異なるコマンドを実行して「通った」と判断しない
 - 特定の作業をするときだけ必要な詳細ガイドラインは `agents/` 配下に置き、この AGENTS.md からは「いつ読むか」を1行で指す

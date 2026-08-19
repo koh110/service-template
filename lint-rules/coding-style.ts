@@ -1,5 +1,5 @@
 /**
- * パッケージ横断のコーディング規約(agents/api-contract.md「lint による機械強制」)を機械的に強制するための
+ * パッケージ横断のコーディング規約(agents/lint-rules.md)を機械的に強制するための
  * oxlint JS plugin。ルート vite.config.ts の `lint.jsPlugins` から読み込まれる。
  * api handler 固有の契約は `index.ts`(プラグイン名 `api-contract`)側に置く。
  */

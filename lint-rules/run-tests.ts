@@ -1,7 +1,7 @@
 /**
  * lint-rules の全ルールを違反例・準拠例で検証するハーネス。
  * RuleTester.run は失敗時に throw するため、最後まで到達すれば全テスト成功。
- * 実行: `npm run test-lint-rules`(CI: ci-api.yml の lint job)
+ * 実行: `npm run test-lint-rules`(CI: ci-lint-rules.yml)
  */
 import { RuleTester } from 'oxlint/plugins-dev'
 import { requireValidatorReturnTypeRule } from './rules/require-validator-return-type.ts'

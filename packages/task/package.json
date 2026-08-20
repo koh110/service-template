@@ -18,11 +18,11 @@
     "lint-fix": "vp lint src bin --fix"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "^7.5.0"
+    "@prisma/adapter-pg": "^7.9.1"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0",
-    "concurrently": "^9.2.1",
-    "typescript": "^6.0.2"
+    "@types/node": "^25.9.5",
+    "concurrently": "^9.2.4",
+    "typescript": "^6.0.3"
   }
 }

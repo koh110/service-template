@@ -46,7 +46,7 @@
     "@typespec/openapi": "^1.15.0",
     "@typespec/openapi3": "^1.15.0",
     "@typespec/rest": "^0.85.0",
-    "concurrently": "^9.2.4",
+    "concurrently": "^10.0.5",
     "openapi-typescript": "^7.9.1",
     "typescript": "^7.0.2"
   },

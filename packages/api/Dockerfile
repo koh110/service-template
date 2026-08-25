@@ -1,4 +1,4 @@
-FROM node:24 AS builder
+FROM node:26 AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json .npmrc ./
@@ -11,7 +11,7 @@ COPY packages/api packages/api
 RUN npm run build -w shared
 RUN npm run build -w api
 
-FROM node:24-alpine AS runner
+FROM node:26-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 # APP_ENV=production を明示することで localTokenVerifier(認証スタブ)を

@@ -9,6 +9,7 @@ import { requireHttpExceptionResRule } from './rules/require-httpexception-res.t
 import { requireValidatorForParamQueryRule } from './rules/require-validator-for-param-query.ts'
 import { noProcessEnvOutsideConfigRule } from './rules/no-process-env-outside-config.ts'
 import { enforceZodEntrypointRule } from './rules/enforce-zod-entrypoint.ts'
+import { noSensitiveLoggingRule } from './rules/no-sensitive-logging.ts'
 
 const handlerFile = 'packages/api/src/handlers/user/index.ts'
 const tester = new RuleTester()
@@ -84,7 +85,10 @@ tester.run('no-process-env-outside-config', noProcessEnvOutsideConfigRule, {
   valid: [
     // 準拠: config ファイル内の参照は許可
     { code: 'export const PORT = process.env.PORT', filename: 'packages/api/src/config.ts' },
-    { code: 'export const API_URI = process.env.API_URI', filename: 'packages/client/src/config.server.ts' },
+    {
+      code: 'export const API_URI = process.env.API_URI',
+      filename: 'packages/client/src/config.server.ts'
+    },
     // 対象外: テストファイル
     { code: 'const db = getTestDbClient(process.env)', filename: 'packages/api/src/app.test.ts' }
   ],
@@ -119,6 +123,80 @@ tester.run('enforce-zod-entrypoint', enforceZodEntrypointRule, {
     {
       code: "import { z } from 'zod/mini'",
       filename: 'packages/api/src/handlers/user/index.ts',
+      errors: 1
+    }
+  ]
+})
+
+const loggerFile = 'packages/api/src/lib/middleware.ts'
+
+tester.run('no-sensitive-logging', noSensitiveLoggingRule, {
+  valid: [
+    // 準拠: 必要な field だけを抜き出して渡す
+    {
+      code: "logger.log({ label: 'access', requestId, body: 'GET /api/user', meta: { status: c.res.status } })",
+      filename: loggerFile
+    },
+    // 準拠: error は logger 側の serializeError で安全な shape になる
+    {
+      code: "logger.error({ label: 'handleError', body: 'failed', error })",
+      filename: loggerFile
+    },
+    // 対象外: logger 以外の呼び出し
+    { code: 'client(url, { headers: c.req.raw.headers })', filename: loggerFile },
+    // 対象外: テストファイルは redaction を検証するため意図的な leakage fixture を渡す
+    {
+      code: "logger.log({ body: 'auth', meta: { authorization: 'Bearer secret' } })",
+      filename: 'packages/api/src/lib/logger.test.ts'
+    }
+  ],
+  invalid: [
+    // key 名が sensitive
+    {
+      code: "logger.log({ body: 'auth', meta: { authorization: value } })",
+      filename: loggerFile,
+      errors: 1
+    },
+    // shorthand の sensitive な変数
+    {
+      code: "logger.debug({ body: 'auth', meta: { sessionToken } })",
+      filename: loggerFile,
+      errors: 1
+    },
+    // set-cookie / idToken / refreshToken も同じ語彙で拾う
+    {
+      code: "logger.log({ body: 'auth', meta: { headerValues: { 'set-cookie': raw, idToken: id, refreshToken: refresh } } })",
+      filename: loggerFile,
+      errors: 3
+    },
+    // sensitive な名前のプロパティ参照
+    {
+      code: "logger.log({ body: 'auth', meta: { value: provider.accessToken } })",
+      filename: loggerFile,
+      errors: 1
+    },
+    // request headers / body / raw を丸ごと渡す
+    {
+      code: "logger.log({ body: 'req', meta: { headers: c.req.raw.headers, payload: req.body } })",
+      filename: loggerFile,
+      errors: 2
+    },
+    // request payload を読み出す呼び出し
+    {
+      code: "logger.debug({ body: 'req', meta: { payload: await c.req.json(), cookie: cookies() } })",
+      filename: loggerFile,
+      errors: 2
+    },
+    // spread は何が載るか静的に追えない
+    {
+      code: "logger.log({ body: 'req', meta: { ...req } })",
+      filename: loggerFile,
+      errors: 1
+    },
+    // 配列内の object も検査する
+    {
+      code: "logger.log({ body: 'auth', meta: { values: [{ accessToken }] } })",
+      filename: loggerFile,
       errors: 1
     }
   ]

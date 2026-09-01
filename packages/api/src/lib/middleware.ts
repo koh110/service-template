@@ -29,9 +29,9 @@ export function accessLogMiddleware() {
     await next()
     logger.log({
       label: 'access',
+      requestId,
       body: `${c.req.method} ${c.req.path}`,
       meta: {
-        requestId,
         method: c.req.method,
         path: c.req.path,
         status: c.res.status,
@@ -71,8 +71,9 @@ export function verifyAuthorizationMiddleware() {
     } catch (error) {
       logger.log({
         label: 'token_verification',
+        requestId: c.get('requestId'),
         body: 'token verification failed',
-        meta: { error }
+        error
       })
       throw createHttpException<UnauthorizedError>(401, {
         type: 'about:blank',

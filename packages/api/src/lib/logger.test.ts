@@ -1,6 +1,6 @@
 import { expect, test, vi } from 'vite-plus/test'
 import { logger } from './logger.js'
-import { REDACTED, UNSUPPORTED } from './redact.js'
+import { REDACTED } from './redact.js'
 
 vi.mock('console')
 
@@ -77,25 +77,6 @@ test('logger.log redacts Authorization / Cookie / token in meta', () => {
       cookie: REDACTED,
       provider: { idToken: REDACTED, userId: 1 }
     }
-  })
-})
-
-test('logger.log does not expand a Headers passed through meta', () => {
-  const logMock = spyOnConsole('log')
-
-  logger.log({
-    body: 'request',
-    meta: {
-      headers: new Headers({ authorization: 'Bearer super-secret-token' })
-    }
-  })
-
-  const [output] = logMock.mock.calls[0]
-  expect(output).not.toContain('super-secret-token')
-  expect(JSON.parse(output)).toStrictEqual({
-    level: 'INFO',
-    body: 'request',
-    meta: { headers: UNSUPPORTED }
   })
 })
 

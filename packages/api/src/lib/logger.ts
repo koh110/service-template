@@ -1,11 +1,12 @@
 import { ENV } from '../config.js'
 import { redact, serializeError } from './redact.js'
+import type { LogMeta } from './redact.js'
 
 /**
  * structured log の単一入口。application code から console を直接呼ばず、
  * 必ずこの logger を経由する(`no-console` lint で強制している)。
  *
- * - `meta` は `redact()` を通し、sensitive key と plain object 以外を落とす
+ * - `meta` は JSON-safe な `LogMeta` 型で受け取り、sensitive key を redact する
  * - `error` は `serializeError()` で name/message/stack/cause の限定 shape にする
  * - `requestId` は access log / application log を横断して追跡するための共通 field。
  *   api では accessLogMiddleware が発行した値を `c.get('requestId')` から渡す
@@ -14,7 +15,7 @@ type LogOptions = {
   label?: string
   requestId?: string
   body: string
-  meta?: Record<string, unknown>
+  meta?: LogMeta
   error?: unknown
 }
 

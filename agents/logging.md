@@ -37,11 +37,11 @@
 `redact()`(`redact.ts`)は 2 つの防御を併用する。key 名だけに頼ると `Headers` や provider response のような「丸ごとのオブジェクト」から漏れるため。
 
 1. **key 名による redaction** — 小文字化 + 区切り文字除去で正規化した key 名が `authorization` / `cookie`(`set-cookie` を含む) / `password` / `secret` / `token`(`idToken` / `accessToken` / `refreshToken` / `sessionToken` を含む) / `credential` / `apikey` / `privatekey` / `sessionid` に部分一致したら値を `[REDACTED]` にする
-2. **plain object 以外は展開しない** — object literal / `Object.create(null)` / 配列 / プリミティブ以外(`Headers` / `Request` / `Response` / `Map` / class instance / 関数)は中身を見ずに `[UNSUPPORTED]` にする
+2. **型による入力制限** — `LogValue` / `LogMeta` は JSON-safe なプリミティブ、配列、object のみを許可する。`Headers` / `Request` / `Response` / provider response などは呼び出し側で必要な field だけを明示的に抽出する
 
 加えて、循環参照は `[CIRCULAR]`、深すぎるネストは `[DEPTH_LIMIT]`、長すぎる配列は末尾を件数へ畳み、ログ量を有界にする。
 
-redaction は最後の防波堤であって、設計上の免罪符ではない。**request / response / headers / body を丸ごと `meta` へ渡さず、必要な field だけを抜き出して渡す**。
+redaction は最後の防波堤であって、設計上の免罪符ではない。**request / response / headers / body を丸ごと `meta` へ渡さず、必要な field だけを抜き出して渡す**。型検査に失敗する値を assertion で無理に logger へ渡してはならない。
 
 ```ts
 // NG: 何が載るか呼び出し側で分からない

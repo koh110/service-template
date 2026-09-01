@@ -4,9 +4,8 @@
  * 書き出す実装は持たない。
  *
  * 設計方針(agents/logging.md 参照):
- * - key 名による redaction と「plain object 以外は展開しない」ホワイトリスト方式を併用する。
- *   key 名だけに依存すると `Headers` / `Request` / provider response のような
- *   丸ごとのオブジェクトから secret が漏れるため
+ * - `LogValue` / `LogMeta` 型で JSON-safe な値だけを受け付ける。
+ *   Headers / Request / provider response などは呼び出し側で必要な field だけを抽出する
  * - Error は enumerable property を spread せず、name/message/stack/cause の
  *   限定 shape へ変換する
  *
@@ -16,8 +15,6 @@
 
 /** 値が sensitive な key に紐づいていたことを示すプレースホルダ。 */
 export const REDACTED = '[REDACTED]'
-/** plain object / 配列 / プリミティブ以外(Headers, Request, Map, 関数等)。 */
-export const UNSUPPORTED = '[UNSUPPORTED]'
 /** 循環参照を検出した位置。 */
 export const CIRCULAR = '[CIRCULAR]'
 /** ネストが深すぎて打ち切った位置。 */
@@ -52,15 +49,16 @@ export function isSensitiveKey(key: string): boolean {
  * `redact()` が出力しうる値。JSON へそのまま流せる形だけを許す。
  * `redactValue` が再帰しており戻り値型を推論できないため明示する。
  */
-export type RedactedValue =
+export type LogValue =
   | string
   | number
   | boolean
   | null
   | undefined
-  | SerializedError
-  | RedactedValue[]
-  | { [key: string]: RedactedValue }
+  | LogValue[]
+  | { [key: string]: LogValue }
+
+export type LogMeta = { [key: string]: LogValue }
 
 /** Error を JSON へ安全に落とし込むための限定 shape。 */
 export type SerializedError = {
@@ -68,23 +66,6 @@ export type SerializedError = {
   message: string
   stack?: string
   cause?: SerializedError
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-/**
- * plain object(リテラル/`Object.create(null)`/`structuredClone` 由来)だけを
- * 展開対象にする。`Headers` / `Request` / `Response` / `Map` / class instance は
- * ここで false になり、丸ごとログへ流れることを防ぐ。
- */
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  if (!isRecord(value)) {
-    return false
-  }
-  const prototype = Object.getPrototypeOf(value)
-  return prototype === Object.prototype || prototype === null
 }
 
 function trimStack(stack: string | undefined): string | undefined {
@@ -99,6 +80,10 @@ function trimStack(stack: string | undefined): string | undefined {
     ...lines.slice(0, MAX_STACK_LINES),
     `    ... ${lines.length - MAX_STACK_LINES} more lines`
   ].join('\n')
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
 }
 
 /**
@@ -151,26 +136,12 @@ export function serializeError(error: unknown): SerializedError {
   return serializeErrorWithDepth(error, 0)
 }
 
-function redactValue(value: unknown, depth: number, seen: WeakSet<object>): RedactedValue {
+function redactValue(value: LogValue, depth: number, seen: WeakSet<object>): LogValue {
   if (value === null || value === undefined) {
     return value
   }
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
     return value
-  }
-  if (typeof value === 'bigint') {
-    return `${value}`
-  }
-  if (typeof value !== 'object') {
-    // function / symbol は構造化ログに載せる意味が無く、toString で
-    // クロージャの中身が漏れる余地もあるため展開しない
-    return UNSUPPORTED
-  }
-  if (value instanceof Error) {
-    return serializeError(value)
-  }
-  if (value instanceof Date) {
-    return value.toISOString()
   }
   if (seen.has(value)) {
     return CIRCULAR
@@ -188,13 +159,7 @@ function redactValue(value: unknown, depth: number, seen: WeakSet<object>): Reda
       ? [...items, `[${value.length - MAX_ARRAY_LENGTH} more items]`]
       : items
   }
-  if (!isPlainObject(value)) {
-    // Headers / Request / Response / Map / class instance など。
-    // 丸ごとログへ流すと credential が混入するため中身を見ない
-    seen.delete(value)
-    return UNSUPPORTED
-  }
-  const result: Record<string, RedactedValue> = {}
+  const result: Record<string, LogValue> = {}
   for (const [key, entry] of Object.entries(value)) {
     result[key] = isSensitiveKey(key) ? REDACTED : redactValue(entry, depth + 1, seen)
   }
@@ -204,9 +169,9 @@ function redactValue(value: unknown, depth: number, seen: WeakSet<object>): Reda
 
 /**
  * ログの meta に載せる値から sensitive field を落とす。
- * sensitive な key は `[REDACTED]` に、plain object 以外のオブジェクトは
- * `[UNSUPPORTED]` に置き換える。
+ * sensitive な key の値を `[REDACTED]` に置き換える。その他の値は
+ * `LogValue` 型で表現できる JSON-safe な値だけを受け付ける。
  */
-export function redact(value: unknown): RedactedValue {
+export function redact(value: LogValue): LogValue {
   return redactValue(value, 0, new WeakSet())
 }

@@ -1,11 +1,12 @@
 import { NEXT_PUBLIC_ENV } from '../../constants'
 import { redact, serializeError } from './redact'
+import type { LogMeta } from './redact'
 
 /**
  * structured log の単一入口。application code から console を直接呼ばず、
  * 必ずこの logger を経由する(`no-console` lint で強制している)。
  *
- * - `meta` は `redact()` を通し、sensitive key と plain object 以外を落とす
+ * - `meta` は JSON-safe な `LogMeta` 型で受け取り、sensitive key を redact する
  * - `error` は `serializeError()` で name/message/stack/cause の限定 shape にする
  * - `requestId` は api の access log と突き合わせるための共通 field(呼び出し側が明示的に渡す)
  */
@@ -13,7 +14,7 @@ type LogOptions = {
   label?: string
   requestId?: string
   body: string
-  meta?: Record<string, unknown>
+  meta?: LogMeta
   error?: unknown
 }
 

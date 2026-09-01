@@ -1,13 +1,6 @@
 import { expect, test } from 'vite-plus/test'
-import {
-  CIRCULAR,
-  DEPTH_LIMIT,
-  REDACTED,
-  UNSUPPORTED,
-  isSensitiveKey,
-  redact,
-  serializeError
-} from './redact'
+import type { LogMeta } from './redact'
+import { CIRCULAR, DEPTH_LIMIT, REDACTED, isSensitiveKey, redact, serializeError } from './redact'
 
 test('isSensitiveKey matches credential-ish keys regardless of case and separators', () => {
   expect(isSensitiveKey('Authorization')).toBe(true)
@@ -25,6 +18,12 @@ test('isSensitiveKey matches credential-ish keys regardless of case and separato
   expect(isSensitiveKey('status')).toBe(false)
   expect(isSensitiveKey('requestId')).toBe(false)
   expect(isSensitiveKey('userId')).toBe(false)
+})
+
+test('LogValue rejects non-JSON runtime objects at compile time', () => {
+  const headers = new Headers()
+  // @ts-expect-error Headers are intentionally not valid LogValue values
+  redact(headers)
 })
 
 test('redact masks Authorization / Cookie / token values including nested ones', () => {
@@ -57,68 +56,6 @@ test('redact masks Authorization / Cookie / token values including nested ones',
   expect(JSON.stringify(actual)).not.toContain('abcdef')
 })
 
-test('redact does not expand Headers / Request / Response', () => {
-  const headers = new Headers({
-    authorization: 'Bearer super-secret-token',
-    cookie: 'session=abcdef'
-  })
-  const request = new Request('https://example.com/api/user', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ password: 'p@ssw0rd' })
-  })
-
-  const actual = redact({ headers, request, response: new Response('body') })
-
-  expect(actual).toStrictEqual({
-    headers: UNSUPPORTED,
-    request: UNSUPPORTED,
-    response: UNSUPPORTED
-  })
-  expect(JSON.stringify(actual)).not.toContain('super-secret-token')
-  expect(JSON.stringify(actual)).not.toContain('p@ssw0rd')
-})
-
-test('redact does not expand class instances or functions', () => {
-  class Provider {
-    accessToken = 'access-token-value'
-  }
-
-  const actual = redact({
-    provider: new Provider(),
-    map: new Map([['token', 'token-value']]),
-    fn: () => {
-      return 'noop'
-    }
-  })
-
-  expect(actual).toStrictEqual({
-    provider: UNSUPPORTED,
-    map: UNSUPPORTED,
-    fn: UNSUPPORTED
-  })
-})
-
-test('redact keeps primitives and normalizes Date / BigInt', () => {
-  const date = new Date('2026-09-01T00:00:00.000Z')
-
-  expect(
-    redact({
-      count: 1,
-      enabled: true,
-      empty: null,
-      date,
-      big: BigInt(10)
-    })
-  ).toStrictEqual({
-    count: 1,
-    enabled: true,
-    empty: null,
-    date: '2026-09-01T00:00:00.000Z',
-    big: '10'
-  })
-})
-
 test('redact walks arrays and truncates long ones', () => {
   expect(redact({ users: [{ password: 'x', name: 'a' }] })).toStrictEqual({
     users: [{ password: REDACTED, name: 'a' }]
@@ -134,7 +71,7 @@ test('redact walks arrays and truncates long ones', () => {
 })
 
 test('redact stops at circular references and depth limit', () => {
-  const circular: Record<string, unknown> = { name: 'root' }
+  const circular: LogMeta = { name: 'root' }
   circular.self = circular
 
   expect(redact(circular)).toStrictEqual({ name: 'root', self: CIRCULAR })
@@ -223,17 +160,5 @@ test('serializeError narrows non-Error values to name / message', () => {
   ).toStrictEqual({
     name: 'auth/invalid-id-token',
     message: 'invalid token'
-  })
-})
-
-test('redact converts nested errors through serializeError', () => {
-  const actual = redact({ failure: new Error('nested boom') })
-
-  expect(actual).toStrictEqual({
-    failure: {
-      name: 'Error',
-      message: 'nested boom',
-      stack: expect.any(String)
-    }
   })
 })

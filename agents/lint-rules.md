@@ -8,6 +8,9 @@
 
 - `coding-style/no-process-env-outside-config` → `process.env` の参照を config ファイル(`config.ts` / `config.server.ts` 等)に集約する(テストファイルは対象外)
 - `coding-style/enforce-zod-entrypoint` → zod の entrypoint をパッケージごとに強制する(client は `zod/mini`、api は `zod`)
+- `coding-style/no-sensitive-logging` → `logger.*` へ credential / request payload を渡すことを禁止する(テストファイルは意図的な leakage fixture を持つため対象外。詳細は `agents/logging.md`)
+
+builtin ルールでは `no-console` を `packages/{api,client,task}/src` に対して error にし、logger 実装本体とテストだけ `vite.config.ts` の override で除外している(structured log の単一入口を保つため)。
 
 ルールを追加・変更したら、違反例・準拠例を `lint-rules/run-tests.ts` に追加し、`npm run test-lint-rules` を通すこと(CI では `ci-lint-rules.yml` が実行する)。
 

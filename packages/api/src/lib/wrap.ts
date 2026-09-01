@@ -10,12 +10,7 @@ export type ProblemDetails = {
 }
 
 function isProblemDetails(value: unknown): value is ProblemDetails {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'title' in value &&
-    'status' in value
-  )
+  return typeof value === 'object' && value !== null && 'title' in value && 'status' in value
 }
 
 export function createHttpException<T extends Record<string, unknown>>(
@@ -35,8 +30,10 @@ export async function handleError(error: Error, c: Context) {
   if (error instanceof HTTPException) {
     logger.debug({
       label: 'handleError',
+      requestId,
       body: error.message,
-      meta: { requestId, error }
+      meta: { status: error.status },
+      error
     })
     // res 付きの HTTPException(createHttpException 経由)はレスポンスの
     // 形状(拡張フィールドを含む)が確定しているため、そのまま返す。
@@ -52,8 +49,8 @@ export async function handleError(error: Error, c: Context) {
   }
   logger.error({
     label: 'handleError',
+    requestId,
     body: 'Error occurred in handleError',
-    meta: { requestId },
     error
   })
   return c.json(

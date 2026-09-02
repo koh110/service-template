@@ -45,8 +45,9 @@ export default defineConfig({
           'coding-style/no-process-env-outside-config': 'error',
           'coding-style/enforce-zod-entrypoint': 'error',
           // structured logging の規約(agents/logging.md)。console は logger
-          // 実装だけに閉じ込め、logger へ secret / request payload を渡させない。
-          'coding-style/no-sensitive-logging': 'error',
+          // 実装だけに閉じ込め、logger の引数は closed event schema の型検査
+          // (excess property check)が確実に効く object literal に限定する。
+          'coding-style/enforce-logger-literal': 'error',
           'no-console': 'error'
         }
       },
@@ -65,7 +66,7 @@ export default defineConfig({
         files: ['**/*.test.ts', '**/*.test.tsx'],
         rules: {
           // テストは logger の出力先である console を spy/assert するため対象外にする
-          // (no-sensitive-logging 側の除外はルール実装がファイル名で判定する)。
+          // (enforce-logger-literal 側の除外はルール実装がファイル名で判定する)。
           'no-console': 'off',
           // 並列耐性テストの規約(AGENTS.md 参照)として describe() を禁止する。
           // 一時的な reminder ではなく恒久的なコーディング規約のため error にする。

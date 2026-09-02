@@ -1,13 +1,5 @@
 import { expect, test } from 'vite-plus/test'
-import type { LogMeta } from './redact.js'
-import {
-  CIRCULAR,
-  DEPTH_LIMIT,
-  REDACTED,
-  isSensitiveKey,
-  redact,
-  serializeError
-} from './redact.js'
+import { REDACTED, UNSUPPORTED, isSensitiveKey, redactMeta, serializeError } from './redact.js'
 
 test('isSensitiveKey matches credential-ish keys regardless of case and separators', () => {
   expect(isSensitiveKey('Authorization')).toBe(true)
@@ -27,65 +19,49 @@ test('isSensitiveKey matches credential-ish keys regardless of case and separato
   expect(isSensitiveKey('userId')).toBe(false)
 })
 
-test('LogValue rejects non-JSON runtime objects at compile time', () => {
-  const headers = new Headers()
-  // @ts-expect-error Headers are intentionally not valid LogValue values
-  redact(headers)
-})
-
-test('redact masks Authorization / Cookie / token values including nested ones', () => {
-  const actual = redact({
-    method: 'GET',
+test('redactMeta masks values bound to sensitive keys', () => {
+  const actual = redactMeta({
+    status: 200,
     Authorization: 'Bearer super-secret-token',
-    cookie: 'session=abcdef',
-    session: {
-      'set-cookie': 'session=abcdef; HttpOnly',
-      idToken: 'id-token-value',
-      accessToken: 'access-token-value',
-      refreshToken: 'refresh-token-value',
-      userId: 1
-    }
+    'set-cookie': 'session=abcdef; HttpOnly',
+    idToken: 'id-token-value',
+    refreshToken: 'refresh-token-value'
   })
 
   expect(actual).toStrictEqual({
-    method: 'GET',
+    status: 200,
     Authorization: REDACTED,
-    cookie: REDACTED,
-    session: {
-      'set-cookie': REDACTED,
-      idToken: REDACTED,
-      accessToken: REDACTED,
-      refreshToken: REDACTED,
-      userId: 1
-    }
+    'set-cookie': REDACTED,
+    idToken: REDACTED,
+    refreshToken: REDACTED
   })
   expect(JSON.stringify(actual)).not.toContain('super-secret-token')
   expect(JSON.stringify(actual)).not.toContain('abcdef')
 })
 
-test('redact walks arrays and truncates long ones', () => {
-  expect(redact({ users: [{ password: 'x', name: 'a' }] })).toStrictEqual({
-    users: [{ password: REDACTED, name: 'a' }]
+test('redactMeta keeps primitives and replaces non-primitive values', () => {
+  const actual = redactMeta({
+    name: 'task',
+    count: 3,
+    ok: true,
+    empty: null,
+    missing: undefined,
+    headers: new Headers({ authorization: 'Bearer super-secret-token' }),
+    nested: { userId: 1 },
+    list: [1, 2, 3]
   })
 
-  const long = Array.from({ length: 52 }).map((_, i) => {
-    return i
+  expect(actual).toStrictEqual({
+    name: 'task',
+    count: 3,
+    ok: true,
+    empty: null,
+    missing: undefined,
+    headers: UNSUPPORTED,
+    nested: UNSUPPORTED,
+    list: UNSUPPORTED
   })
-  const actual = redact(long)
-
-  expect(Array.isArray(actual) && actual.length).toBe(51)
-  expect(Array.isArray(actual) && actual.at(-1)).toBe('[2 more items]')
-})
-
-test('redact stops at circular references and depth limit', () => {
-  const circular: LogMeta = { name: 'root' }
-  circular.self = circular
-
-  expect(redact(circular)).toStrictEqual({ name: 'root', self: CIRCULAR })
-
-  expect(redact({ a: { b: { c: { d: { e: { f: { g: 'deep' } } } } } } })).toStrictEqual({
-    a: { b: { c: { d: { e: { f: DEPTH_LIMIT } } } } }
-  })
+  expect(JSON.stringify(actual)).not.toContain('super-secret-token')
 })
 
 test('serializeError keeps only name / message / stack', () => {

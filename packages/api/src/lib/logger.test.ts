@@ -1,6 +1,6 @@
 import { expect, test, vi } from 'vite-plus/test'
 import { logger } from './logger.js'
-import { REDACTED } from './redact.js'
+import { REDACTED, UNSUPPORTED } from './redact.js'
 
 vi.mock('console')
 
@@ -36,7 +36,7 @@ test('logger.log carries requestId as a top level field', () => {
     label: 'access',
     requestId: 'request-id-1',
     body: 'GET /api/user',
-    meta: { status: 200 }
+    meta: { method: 'GET', path: '/api/user', status: 200, duration: 3 }
   })
 
   expect(logMock).toHaveBeenCalledTimes(1)
@@ -46,36 +46,61 @@ test('logger.log carries requestId as a top level field', () => {
       label: 'access',
       requestId: 'request-id-1',
       body: 'GET /api/user',
-      meta: { status: 200 }
+      meta: { method: 'GET', path: '/api/user', status: 200, duration: 3 }
     })
   )
 })
 
-test('logger.log redacts Authorization / Cookie / token in meta', () => {
+test('logger meta is a closed event schema at compile time', () => {
   const logMock = spyOnConsole('log')
 
+  // @ts-expect-error LogEvents に無い label は meta を持てない
+  logger.log({ label: 'unknown-label', body: 'x', meta: { status: 200 } })
+
+  // @ts-expect-error 既知 label でも schema に無い field は渡せない
+  logger.log({ label: 'handleError', body: 'x', meta: { status: 500, authorization: 'Bearer x' } })
+
+  // @ts-expect-error meta の値は primitive のみで nested object は渡せない
+  logger.log({ label: 'handleError', body: 'x', meta: { status: { code: 500 } } })
+
+  const payload: Record<string, unknown> = { status: 500 }
+  // @ts-expect-error 型の広い payload 変数を meta へ渡せない
+  logger.log({ label: 'handleError', body: 'x', meta: payload })
+
+  // @ts-expect-error payload 変数の spread も渡せない
+  logger.log({ label: 'handleError', body: 'x', meta: { ...payload } })
+
+  // 上記はいずれも型検査で弾かれることの検証であり、runtime では出力自体は行われる
+  expect(logMock).toHaveBeenCalledTimes(5)
+})
+
+test('redactMeta remains as a runtime last line of defense', () => {
+  const logMock = spyOnConsole('log')
+
+  // wide な型の変数は closed event schema に代入できない(実際に型エラーになる)
+  const leaked: Record<string, unknown> = {
+    status: 200,
+    authorization: 'Bearer super-secret-token',
+    provider: { idToken: 'id-token-value' }
+  }
   logger.log({
-    label: 'auth',
+    label: 'handleError',
     body: 'verified',
-    meta: {
-      authorization: 'Bearer super-secret-token',
-      cookie: 'session=abcdef',
-      provider: { idToken: 'id-token-value', userId: 1 }
-    }
+    // @ts-expect-error 型検査をすり抜けた値が runtime で redact されることを検証する
+    meta: leaked
   })
 
   const [output] = logMock.mock.calls[0]
   expect(output).not.toContain('super-secret-token')
-  expect(output).not.toContain('abcdef')
   expect(output).not.toContain('id-token-value')
   expect(JSON.parse(output)).toStrictEqual({
     level: 'INFO',
-    label: 'auth',
+    label: 'handleError',
     body: 'verified',
     meta: {
+      status: 200,
       authorization: REDACTED,
-      cookie: REDACTED,
-      provider: { idToken: REDACTED, userId: 1 }
+      provider: UNSUPPORTED
     }
   })
 })

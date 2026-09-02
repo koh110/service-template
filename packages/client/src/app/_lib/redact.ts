@@ -1,13 +1,12 @@
 /**
- * ログ出力する値から credential / PII を落とすための redaction ヘルパー。
- * logger の単一入口(`_lib/logger.ts`)から呼ばれる想定で、直接 console へ
- * 書き出す実装は持たない。
+ * ログ出力を安全側に倒すための redaction ヘルパー。logger の単一入口
+ * (`_lib/logger.ts`)から呼ばれる想定で、直接 console へ書き出す実装は持たない。
  *
- * 設計方針(agents/logging.md 参照):
- * - `LogValue` / `LogMeta` 型で JSON-safe な値だけを受け付ける。
- *   Headers / Request / provider response などは呼び出し側で必要な field だけを抽出する
- * - Error は enumerable property を spread せず、name/message/stack/cause の
- *   限定 shape へ変換する
+ * 第一の防御は logger の closed event schema(`logger.ts` の `LogEvents` 型)。
+ * ここは型検査をすり抜けた値(assertion 等)に対する最後の防波堤:
+ * - `redactMeta()` は flat な meta を走査し、sensitive な key 名の値を
+ *   `[REDACTED]` へ、primitive でない値を `[UNSUPPORTED]` へ置き換える
+ * - `serializeError()` は Error を name/message/stack/cause の限定 shape へ変換する
  *
  * 各パッケージは実行コンテキストが異なるため(AGENTS.md の Monorepo Guidelines)、
  * このファイルは shared へ切り出さず api/client/task がそれぞれ自己完結して持つ。
@@ -15,15 +14,9 @@
 
 /** 値が sensitive な key に紐づいていたことを示すプレースホルダ。 */
 export const REDACTED = '[REDACTED]'
-/** 循環参照を検出した位置。 */
-export const CIRCULAR = '[CIRCULAR]'
-/** ネストが深すぎて打ち切った位置。 */
-export const DEPTH_LIMIT = '[DEPTH_LIMIT]'
+/** primitive でない値が meta へ渡っていたことを示すプレースホルダ。 */
+export const UNSUPPORTED = '[UNSUPPORTED]'
 
-/** ネストの最大深さ。これを超えた位置は DEPTH_LIMIT に置き換える。 */
-const MAX_DEPTH = 6
-/** 配列の最大要素数。超過分は件数だけを残す。 */
-const MAX_ARRAY_LENGTH = 50
 /** stack trace として残す最大行数(ログ量を有界にするため)。 */
 const MAX_STACK_LINES = 20
 /** cause チェーンを辿る最大段数(cause の循環でも停止させるため)。 */
@@ -45,20 +38,35 @@ export function isSensitiveKey(key: string): boolean {
   return SENSITIVE_KEY_PATTERN.test(key.toLowerCase().replace(KEY_SEPARATOR_PATTERN, ''))
 }
 
-/**
- * `redact()` が出力しうる値。JSON へそのまま流せる形だけを許す。
- * `redactValue` が再帰しており戻り値型を推論できないため明示する。
- */
-export type LogValue =
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  | LogValue[]
-  | { [key: string]: LogValue }
+/** meta の field として logger が出力する値。primitive のみを許す。 */
+export type LogPrimitive = string | number | boolean | null | undefined
 
-export type LogMeta = { [key: string]: LogValue }
+/**
+ * ログの meta を flat に走査し、型検査をすり抜けた値を安全な形へ落とす。
+ * sensitive な key 名の値は `[REDACTED]`、primitive でない値(object /
+ * Headers / provider response 等)は `[UNSUPPORTED]` に置き換える。
+ */
+export function redactMeta(meta: Record<string, unknown>): Record<string, LogPrimitive> {
+  const result: Record<string, LogPrimitive> = {}
+  for (const [key, value] of Object.entries(meta)) {
+    if (isSensitiveKey(key)) {
+      result[key] = REDACTED
+      continue
+    }
+    if (
+      value === null ||
+      value === undefined ||
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean'
+    ) {
+      result[key] = value
+      continue
+    }
+    result[key] = UNSUPPORTED
+  }
+  return result
+}
 
 /** Error を JSON へ安全に落とし込むための限定 shape。 */
 export type SerializedError = {
@@ -134,44 +142,4 @@ function serializeErrorWithDepth(error: unknown, depth: number): SerializedError
  */
 export function serializeError(error: unknown): SerializedError {
   return serializeErrorWithDepth(error, 0)
-}
-
-function redactValue(value: LogValue, depth: number, seen: WeakSet<object>): LogValue {
-  if (value === null || value === undefined) {
-    return value
-  }
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-    return value
-  }
-  if (seen.has(value)) {
-    return CIRCULAR
-  }
-  if (depth >= MAX_DEPTH) {
-    return DEPTH_LIMIT
-  }
-  seen.add(value)
-  if (Array.isArray(value)) {
-    const items = value.slice(0, MAX_ARRAY_LENGTH).map((item) => {
-      return redactValue(item, depth + 1, seen)
-    })
-    seen.delete(value)
-    return value.length > MAX_ARRAY_LENGTH
-      ? [...items, `[${value.length - MAX_ARRAY_LENGTH} more items]`]
-      : items
-  }
-  const result: Record<string, LogValue> = {}
-  for (const [key, entry] of Object.entries(value)) {
-    result[key] = isSensitiveKey(key) ? REDACTED : redactValue(entry, depth + 1, seen)
-  }
-  seen.delete(value)
-  return result
-}
-
-/**
- * ログの meta に載せる値から sensitive field を落とす。
- * sensitive な key の値を `[REDACTED]` に置き換える。その他の値は
- * `LogValue` 型で表現できる JSON-safe な値だけを受け付ける。
- */
-export function redact(value: LogValue): LogValue {
-  return redactValue(value, 0, new WeakSet())
 }

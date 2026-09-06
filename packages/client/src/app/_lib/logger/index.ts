@@ -1,4 +1,4 @@
-import { NEXT_PUBLIC_ENV } from '../../constants'
+import { NEXT_PUBLIC_ENV } from '../../../constants'
 import { redactMeta, serializeError } from './redact'
 
 /**

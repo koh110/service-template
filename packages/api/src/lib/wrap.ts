@@ -1,6 +1,6 @@
 import type { Context } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import { logger } from './logger.js'
+import { logger } from './logger/index.js'
 
 export type ProblemDetails = {
   type: string

@@ -1,8 +1,8 @@
 /**
  * ログ出力を安全側に倒すための redaction ヘルパー。logger の単一入口
- * (`lib/logger.ts`)から呼ばれる想定で、直接 console へ書き出す実装は持たない。
+ * (`_lib/logger/index.ts`)から呼ばれる想定で、直接 console へ書き出す実装は持たない。
  *
- * 第一の防御は logger の closed event schema(`logger.ts` の `LogEvents` 型)。
+ * 第一の防御は logger の closed event schema(`logger/index.ts` の `LogEvents` 型)。
  * ここは型検査をすり抜けた値(assertion 等)に対する最後の防波堤:
  * - `redactMeta()` は flat な meta を走査し、sensitive な key 名の値を
  *   `[REDACTED]` へ、primitive でない値を `[UNSUPPORTED]` へ置き換える

@@ -1,5 +1,5 @@
 import { expect, test, vi } from 'vite-plus/test'
-import { logger } from './logger.js'
+import { logger } from './index.js'
 import { REDACTED, UNSUPPORTED } from './redact.js'
 
 vi.mock('console')

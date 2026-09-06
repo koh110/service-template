@@ -5,7 +5,7 @@ import type * as schema from 'shared/src/schema'
 import { CORS_OPTIONS } from '../config.js'
 import { localTokenVerifier } from '../lib/auth/local-verifier.js'
 import type { TokenVerifier } from '../lib/auth/token-verifier.js'
-import { logger } from '../lib/logger.js'
+import { logger } from './logger/index.js'
 import { createHttpException } from './wrap.js'
 
 // 実プロバイダ(Firebase Admin 等)に差し替える場合はここを変更する

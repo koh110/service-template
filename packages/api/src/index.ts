@@ -1,7 +1,7 @@
 import { serve } from '@hono/node-server'
 import { createApp } from './app.js'
 import { ENV, LOCAL_PROXY_CONFIG_DIR, PORT } from './config.js'
-import { logger } from './lib/logger.js'
+import { logger } from './lib/logger/index.js'
 
 let server: ReturnType<typeof serve> | null = null
 

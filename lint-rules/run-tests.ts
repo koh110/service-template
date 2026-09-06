@@ -147,7 +147,7 @@ tester.run('enforce-logger-literal', enforceLoggerLiteralRule, {
     // 対象外: テストファイルは runtime の最終防衛を検証するため変数渡しを許す
     {
       code: 'logger.log(leakageFixture)',
-      filename: 'packages/api/src/lib/logger.test.ts'
+      filename: 'packages/api/src/lib/logger/index.test.ts'
     }
   ],
   invalid: [

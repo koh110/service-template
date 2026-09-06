@@ -54,9 +54,9 @@ export default defineConfig({
       {
         // logger 実装本体だけが console へ書き出す(structured log の単一入口)。
         files: [
-          'packages/api/src/lib/logger.ts',
-          'packages/client/src/app/_lib/logger.ts',
-          'packages/task/src/lib/logger.ts'
+          'packages/api/src/lib/logger/index.ts',
+          'packages/client/src/app/_lib/logger/index.ts',
+          'packages/task/src/lib/logger/index.ts'
         ],
         rules: {
           'no-console': 'off'

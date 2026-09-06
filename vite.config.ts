@@ -43,12 +43,31 @@ export default defineConfig({
         files: ['packages/api/src/**', 'packages/client/src/**', 'packages/task/src/**'],
         rules: {
           'coding-style/no-process-env-outside-config': 'error',
-          'coding-style/enforce-zod-entrypoint': 'error'
+          'coding-style/enforce-zod-entrypoint': 'error',
+          // structured logging の規約(agents/logging.md)。console は logger
+          // 実装だけに閉じ込め、logger の引数は closed event schema の型検査
+          // (excess property check)が確実に効く object literal に限定する。
+          'coding-style/enforce-logger-literal': 'error',
+          'no-console': 'error'
         }
       },
       {
-        files: ['**/*.test.ts'],
+        // logger 実装本体だけが console へ書き出す(structured log の単一入口)。
+        files: [
+          'packages/api/src/lib/logger/index.ts',
+          'packages/client/src/app/_lib/logger/index.ts',
+          'packages/task/src/lib/logger/index.ts'
+        ],
         rules: {
+          'no-console': 'off'
+        }
+      },
+      {
+        files: ['**/*.test.ts', '**/*.test.tsx'],
+        rules: {
+          // テストは logger の出力先である console を spy/assert するため対象外にする
+          // (enforce-logger-literal 側の除外はルール実装がファイル名で判定する)。
+          'no-console': 'off',
           // 並列耐性テストの規約(AGENTS.md 参照)として describe() を禁止する。
           // 一時的な reminder ではなく恒久的なコーディング規約のため error にする。
           'no-restricted-imports': [

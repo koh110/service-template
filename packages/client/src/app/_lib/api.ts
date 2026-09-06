@@ -1,6 +1,6 @@
 import type { Result } from 'shared/src/index'
 import type * as schema from 'shared/src/schema'
-import { logger } from './logger'
+import { logger } from './logger/index'
 
 type Prettify<T> = {
   [K in keyof T]: T[K]

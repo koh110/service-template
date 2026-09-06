@@ -5,7 +5,7 @@ import type * as schema from 'shared/src/schema'
 import { CORS_OPTIONS } from '../config.js'
 import { localTokenVerifier } from '../lib/auth/local-verifier.js'
 import type { TokenVerifier } from '../lib/auth/token-verifier.js'
-import { logger } from '../lib/logger.js'
+import { logger } from './logger/index.js'
 import { createHttpException } from './wrap.js'
 
 // 実プロバイダ(Firebase Admin 等)に差し替える場合はここを変更する
@@ -29,9 +29,9 @@ export function accessLogMiddleware() {
     await next()
     logger.log({
       label: 'access',
+      requestId,
       body: `${c.req.method} ${c.req.path}`,
       meta: {
-        requestId,
         method: c.req.method,
         path: c.req.path,
         status: c.res.status,
@@ -71,8 +71,9 @@ export function verifyAuthorizationMiddleware() {
     } catch (error) {
       logger.log({
         label: 'token_verification',
+        requestId: c.get('requestId'),
         body: 'token verification failed',
-        meta: { error }
+        error
       })
       throw createHttpException<UnauthorizedError>(401, {
         type: 'about:blank',

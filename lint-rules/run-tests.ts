@@ -9,6 +9,7 @@ import { requireHttpExceptionResRule } from './rules/require-httpexception-res.t
 import { requireValidatorForParamQueryRule } from './rules/require-validator-for-param-query.ts'
 import { noProcessEnvOutsideConfigRule } from './rules/no-process-env-outside-config.ts'
 import { enforceZodEntrypointRule } from './rules/enforce-zod-entrypoint.ts'
+import { enforceLoggerLiteralRule } from './rules/enforce-logger-literal.ts'
 
 const handlerFile = 'packages/api/src/handlers/user/index.ts'
 const tester = new RuleTester()
@@ -84,7 +85,10 @@ tester.run('no-process-env-outside-config', noProcessEnvOutsideConfigRule, {
   valid: [
     // 準拠: config ファイル内の参照は許可
     { code: 'export const PORT = process.env.PORT', filename: 'packages/api/src/config.ts' },
-    { code: 'export const API_URI = process.env.API_URI', filename: 'packages/client/src/config.server.ts' },
+    {
+      code: 'export const API_URI = process.env.API_URI',
+      filename: 'packages/client/src/config.server.ts'
+    },
     // 対象外: テストファイル
     { code: 'const db = getTestDbClient(process.env)', filename: 'packages/api/src/app.test.ts' }
   ],
@@ -119,6 +123,68 @@ tester.run('enforce-zod-entrypoint', enforceZodEntrypointRule, {
     {
       code: "import { z } from 'zod/mini'",
       filename: 'packages/api/src/handlers/user/index.ts',
+      errors: 1
+    }
+  ]
+})
+
+const loggerFile = 'packages/api/src/lib/middleware.ts'
+
+tester.run('enforce-logger-literal', enforceLoggerLiteralRule, {
+  valid: [
+    // 準拠: 第1引数・meta とも object literal(値の型は closed event schema が検査する)
+    {
+      code: "logger.log({ label: 'access', requestId, body: 'GET /api/user', meta: { method: c.req.method, path: c.req.path, status: c.res.status, duration: 12 } })",
+      filename: loggerFile
+    },
+    // 準拠: error は logger 側の serializeError で安全な shape になる
+    {
+      code: "logger.error({ label: 'handleError', body: 'failed', error })",
+      filename: loggerFile
+    },
+    // 対象外: logger 以外の呼び出し
+    { code: 'client(url, { ...options })', filename: loggerFile },
+    // 対象外: テストファイルは runtime の最終防衛を検証するため変数渡しを許す
+    {
+      code: 'logger.log(leakageFixture)',
+      filename: 'packages/api/src/lib/logger/index.test.ts'
+    }
+  ],
+  invalid: [
+    // 第1引数の変数渡しは excess property check が効かない
+    {
+      code: 'logger.log(options)',
+      filename: loggerFile,
+      errors: 1
+    },
+    // 第1引数オブジェクトでの spread
+    {
+      code: "logger.log({ ...base, body: 'x' })",
+      filename: loggerFile,
+      errors: 1
+    },
+    // meta の変数渡し
+    {
+      code: "logger.debug({ body: 'x', meta: metaValues })",
+      filename: loggerFile,
+      errors: 1
+    },
+    // meta 内での spread
+    {
+      code: "logger.log({ body: 'x', meta: { ...payload } })",
+      filename: loggerFile,
+      errors: 1
+    },
+    // 第1引数オブジェクトでの computed key
+    {
+      code: "logger.log({ body: 'x', [key]: value })",
+      filename: loggerFile,
+      errors: 1
+    },
+    // meta 内での computed key
+    {
+      code: "logger.log({ body: 'x', meta: { [key]: value } })",
+      filename: loggerFile,
       errors: 1
     }
   ]

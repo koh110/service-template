@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util'
-import { logger } from './lib/logger.js'
+import { logger } from './lib/logger/index.js'
 
 const { positionals } = parseArgs({
   allowPositionals: true,

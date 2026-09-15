@@ -1,0 +1,36 @@
+{
+  "name": "spa",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "pretsc": "npm run build -w shared",
+    "tsc": "react-router typegen && tsc --noEmit",
+    "build": "rm -rf dist && vp build && mv dist/spa/client dist/public && rm -rf dist/spa && tsc -p tsconfig.server.json",
+    "start": "node dist/server/index.js",
+    "test": "vp test --config=./vite.config.ts",
+    "test-ci": "vp test run --config=./vite.config.ts --maxWorkers=1",
+    "format": "vp fmt package.json react-router.config.ts vite.config.ts app src --write",
+    "format-check": "vp fmt package.json react-router.config.ts vite.config.ts app src --check",
+    "lint": "vp lint react-router.config.ts vite.config.ts app src",
+    "lint-fix": "vp lint react-router.config.ts vite.config.ts app src --fix"
+  },
+  "dependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router": "^7.18.3",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@react-router/dev": "^7.18.3",
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^25.9.5",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "happy-dom": "^20.11.0",
+    "typescript": "^6.0.3",
+    "vite-cli": "npm:vite@^8.2.2"
+  }
+}

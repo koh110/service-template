@@ -1,9 +1,11 @@
-name: CI client
+name: CI SPA
 
 on:
   push:
     paths:
-      - 'packages/client/**'
+      - '.github/workflows/ci-spa.yml'
+      - 'packages/spa/**'
+      - 'packages/shared/**'
       - 'package.json'
       - 'package-lock.json'
       - 'vite.config.ts'
@@ -11,16 +13,16 @@ on:
     branches: [ main ]
   pull_request:
     paths:
-      - '.github/workflows/ci-client.yml'
+      - '.github/workflows/ci-spa.yml'
+      - 'packages/spa/**'
       - 'packages/shared/**'
-      - 'packages/client/**'
       - 'package.json'
       - 'package-lock.json'
       - 'vite.config.ts'
       - 'lint-rules/**'
 
 env:
-  WORKSPACE_NAME: client
+  WORKSPACE_NAME: spa
 
 jobs:
   test:
@@ -37,5 +39,6 @@ jobs:
       - run: npm ci
       - run: npm run lint -w ${{ env.WORKSPACE_NAME }}
       - run: npm run build -w shared
+      - run: npm run tsc -w ${{ env.WORKSPACE_NAME }}
       - run: npm run build -w ${{ env.WORKSPACE_NAME }}
       - run: npm run test -w ${{ env.WORKSPACE_NAME }}

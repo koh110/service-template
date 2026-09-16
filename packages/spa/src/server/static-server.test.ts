@@ -84,7 +84,6 @@ async function withServer(
   }
   const config = {
     apiUri: `http://127.0.0.1:${upstreamAddress.port}`,
-    apiToken: 'test-token',
     host: '127.0.0.1',
     port,
     spaDistDir: root,
@@ -121,18 +120,23 @@ function request({
   requestPath,
   authority,
   method = 'GET',
-  origin
+  origin,
+  cookie
 }: {
   port: number
   requestPath: string
   authority: string
   method?: string
   origin?: string
+  cookie?: string
 }) {
   return new Promise<HttpResponse>((resolve, reject) => {
     const headers: http.OutgoingHttpHeaders = { Host: authority }
     if (origin !== undefined) {
       headers.Origin = origin
+    }
+    if (cookie !== undefined) {
+      headers.Cookie = cookie
     }
     const request = http.request(
       {
@@ -239,7 +243,13 @@ test('static server enforces authority, origin, methods, and reserved API paths'
     expect(post.headers.allow).toBe('GET')
     expect(post.body).toBe('Method Not Allowed\n')
 
-    const api = await request({ port, authority, origin, requestPath: '/api/user' })
+    const api = await request({
+      port,
+      authority,
+      origin,
+      cookie: 'session=sample-session',
+      requestPath: '/api/user'
+    })
     expect(api.status).toBe(200)
     expect(JSON.parse(api.body)).toEqual({
       count: 2,
@@ -274,7 +284,7 @@ test('static server rejects preexisting file and directory symlinks', async () =
 test('development API boundary fails closed before its authority is available', async () => {
   const port = await reservePort()
   const authority = formatAuthority('127.0.0.1', port)
-  const proxy = createApiProxy({ apiUri: 'http://upstream.invalid', apiToken: 'test-token' })
+  const proxy = createApiProxy({ apiUri: 'http://upstream.invalid' })
   const server = http.createServer((req, res) => {
     void handleDevApiBoundary({
       req,
@@ -315,13 +325,12 @@ test('development API boundary fails closed before its authority is available', 
   }
 })
 
-test('static server sanitizes missing tokens and upstream failures', async () => {
+test('static server requires a session cookie and sanitizes upstream failures', async () => {
   const root = createDist()
   const port = await reservePort()
   const authority = formatAuthority('127.0.0.1', port)
   const config = {
     apiUri: 'http://127.0.0.1:1',
-    apiToken: null,
     host: '127.0.0.1',
     port,
     spaDistDir: root,
@@ -333,10 +342,19 @@ test('static server sanitizes missing tokens and upstream failures', async () =>
     application.server.listen(port, '127.0.0.1', resolve)
   })
   try {
-    const response = await request({ port, authority, requestPath: '/api/user' })
-    expect(response.status).toBe(503)
-    expect(response.body).toBe('API token is not configured\n')
-    expect(response.body).not.toContain('test-token')
+    const unauthorized = await request({ port, authority, requestPath: '/api/user' })
+    expect(unauthorized.status).toBe(401)
+    expect(unauthorized.body).toBe('Not authenticated\n')
+
+    const upstreamFailure = await request({
+      port,
+      authority,
+      cookie: 'session=sample-session',
+      requestPath: '/api/user'
+    })
+    expect(upstreamFailure.status).toBe(502)
+    expect(upstreamFailure.body).toBe('Bad Gateway\n')
+    expect(upstreamFailure.body).not.toContain('sample-session')
   } finally {
     application.abortAll()
     await new Promise<void>((resolve) => {

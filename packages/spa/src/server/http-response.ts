@@ -31,26 +31,3 @@ export function sendTextResponse({
   }
   response.end(payload)
 }
-
-export function sendJsonResponse({
-  response,
-  method,
-  body
-}: {
-  response: ServerResponse
-  method: string
-  body: string
-}) {
-  const payload = Buffer.from(body, 'utf8')
-  response.writeHead(200, {
-    'content-type': 'application/json; charset=utf-8',
-    'content-length': String(payload.byteLength),
-    'cache-control': 'no-store',
-    'x-content-type-options': 'nosniff'
-  })
-  if (method === 'HEAD') {
-    response.end()
-    return
-  }
-  response.end(payload)
-}

@@ -5,7 +5,7 @@ import path from 'node:path'
 import { expect, test } from 'vite-plus/test'
 import { assertDistribution, formatAuthority, loadConfig } from './config.js'
 
-test('config defaults to a loopback authority and a sanitized empty token', () => {
+test('config defaults to a loopback authority and API origin', () => {
   const config = loadConfig({})
 
   expect(config.host).toBe('127.0.0.1')
@@ -13,18 +13,13 @@ test('config defaults to a loopback authority and a sanitized empty token', () =
   expect(config.authority).toBe('127.0.0.1:8789')
   expect(config.origin).toBe('http://127.0.0.1:8789')
   expect(config.apiUri).toBe('http://localhost:8000')
-  expect(config.apiToken).toBeNull()
 })
 
-test('config trims token edges but preserves internal whitespace', () => {
-  const config = loadConfig({ API_TOKEN: '  test  token  ' })
-  expect(config.apiToken).toBe('test  token')
+test('config preserves the API origin without exposing a credential setting', () => {
+  const config = loadConfig({ API_URI: 'https://api.example.test' })
+
+  expect(config.apiUri).toBe('https://api.example.test')
   expect(formatAuthority('::1', 8789)).toBe('[::1]:8789')
-})
-
-test('config trims only ASCII whitespace from token edges', () => {
-  const config = loadConfig({ API_TOKEN: '\u2003test\u2003' })
-  expect(config.apiToken).toBe('\u2003test\u2003')
 })
 
 test('config rejects non-loopback hosts and malformed API origins', () => {

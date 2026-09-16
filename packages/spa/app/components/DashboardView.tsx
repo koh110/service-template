@@ -10,11 +10,23 @@ type UserListProps = {
   data: Extract<UserLoadResult, { ok: true }>['body']
 }
 
-function ApiState({ online }: { online: boolean }) {
+function ApiState({ online, requiresSession }: { online: boolean; requiresSession: boolean }) {
   if (online) {
     return (
       <p className="api-state api-online" role="status" aria-live="polite" aria-label="API ONLINE">
         API ONLINE
+      </p>
+    )
+  }
+  if (requiresSession) {
+    return (
+      <p
+        className="api-state api-offline"
+        role="status"
+        aria-live="polite"
+        aria-label="AUTH REQUIRED"
+      >
+        AUTH REQUIRED
       </p>
     )
   }
@@ -80,18 +92,29 @@ function UserList({ data }: UserListProps) {
   )
 }
 
-function OfflineState() {
+function OfflineState({ status }: { status: number }) {
+  const requiresSession = status === 401 || status === 403
   return (
     <section className="state-panel state-offline" role="alert" aria-labelledby="offline-title">
-      <p className="state-value">OFFLINE</p>
-      <h2 id="offline-title">Service APIへ接続できません</h2>
-      <p className="state-hint">Service APIの稼働状態と接続設定を確認してください。</p>
+      <p className="state-value">{requiresSession ? 'SESSION' : 'OFFLINE'}</p>
+      <h2 id="offline-title">
+        {requiresSession ? 'セッションが必要です' : 'Service APIへ接続できません'}
+      </h2>
+      <p className="state-hint">
+        {requiresSession
+          ? 'Next.jsサンプルでログインしてから、この画面を再読み込みしてください。'
+          : 'Service APIの稼働状態と接続設定を確認してください。'}
+      </p>
     </section>
   )
 }
 
+const emptyData = { count: 0, user: [] } satisfies UserListProps['data']
+
 export function DashboardView({ result }: DashboardViewProps) {
-  const successData = result.ok ? result.body : null
+  const successData = result.ok ? result.body : emptyData
+  const failureStatus = result.ok ? 0 : result.status
+  const requiresSession = !result.ok && (result.status === 401 || result.status === 403)
 
   return (
     <main className="dashboard" aria-busy="false">
@@ -100,13 +123,13 @@ export function DashboardView({ result }: DashboardViewProps) {
           <p className="eyebrow">service template</p>
           <h1>Service Template</h1>
         </div>
-        <ApiState online={result.ok} />
+        <ApiState online={result.ok} requiresSession={requiresSession} />
       </header>
-      <Activity mode={successData === null ? 'hidden' : 'visible'}>
-        {successData === null ? null : <UserList data={successData} />}
+      <Activity mode={result.ok ? 'visible' : 'hidden'}>
+        <UserList data={successData} />
       </Activity>
-      <Activity mode={successData === null ? 'visible' : 'hidden'}>
-        {successData === null ? <OfflineState /> : null}
+      <Activity mode={result.ok ? 'hidden' : 'visible'}>
+        <OfflineState status={failureStatus} />
       </Activity>
     </main>
   )

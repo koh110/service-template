@@ -31,8 +31,13 @@ export function validateAuthority({
   }
 
   const origins = headerValues(request, 'origin')
-  if (origins.length > 1 || origins.some((value) => value.includes(','))) {
+  if (origins.length > 1) {
     return { ok: false, status: 403 }
+  }
+  for (const value of origins) {
+    if (value.includes(',')) {
+      return { ok: false, status: 403 }
+    }
   }
   if (origins.length === 1 && origins[0] !== origin) {
     return { ok: false, status: 403 }

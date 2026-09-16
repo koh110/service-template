@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import fsp from 'node:fs/promises'
 import http from 'node:http'
 import path from 'node:path'
+import { pipeline } from 'node:stream/promises'
 import type { RuntimeConfig } from './config.js'
 import { validateAuthority } from './authority.js'
 import { sendTextResponse } from './http-response.js'
@@ -140,11 +141,8 @@ async function sendFile({
   try {
     const fileHandle = await fsp.open(filePath, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW)
     const stream = fileHandle.createReadStream({ autoClose: true })
-    stream.on('error', () => {
-      response.destroy()
-    })
     response.writeHead(200, headers)
-    stream.pipe(response)
+    await pipeline(stream, response)
   } catch {
     if (!response.headersSent && !response.destroyed) {
       sendBadRequest(response, method)
@@ -353,18 +351,14 @@ export async function handleDevApiBoundary({
 
 export function createApplicationServer({
   config,
-  fetchImplementation,
-  now
+  fetchImplementation
 }: {
   config: RuntimeConfig
   fetchImplementation?: typeof fetch
-  now?: () => number
 }) {
   const proxy = createApiProxy({
     apiUri: config.apiUri,
-    apiToken: config.apiToken,
-    fetchImplementation,
-    now
+    fetchImplementation
   })
   const server = http.createServer((request, response) => {
     void handleRequest({ request, response, config, proxy }).catch(() => {

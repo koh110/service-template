@@ -2,18 +2,25 @@ import { parseUserResponse, type UserResponse } from '../../src/api-contract'
 
 export type UserLoadResult =
   | { ok: true; body: UserResponse }
-  | { ok: false; status: number; body: 'Bad Gateway' }
+  | { ok: false; status: number; body: 'Not authenticated' | 'Forbidden' | 'Bad Gateway' }
 
 export async function fetchUsers() {
   try {
     const response = await fetch('/api/user', {
       cache: 'no-store',
+      credentials: 'include',
       headers: {
         Accept: 'application/json'
       }
     })
     if (!response.ok) {
-      return { ok: false, status: response.status, body: 'Bad Gateway' } satisfies UserLoadResult
+      const body =
+        response.status === 401
+          ? 'Not authenticated'
+          : response.status === 403
+            ? 'Forbidden'
+            : 'Bad Gateway'
+      return { ok: false, status: response.status, body } satisfies UserLoadResult
     }
 
     const parsed = parseUserResponse(await response.json())

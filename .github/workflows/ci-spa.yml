@@ -6,6 +6,7 @@ on:
       - '.github/workflows/ci-spa.yml'
       - 'packages/spa/**'
       - 'packages/shared/**'
+      - 'docs/spec/spa-sample.md'
       - 'package.json'
       - 'package-lock.json'
       - 'vite.config.ts'
@@ -16,6 +17,7 @@ on:
       - '.github/workflows/ci-spa.yml'
       - 'packages/spa/**'
       - 'packages/shared/**'
+      - 'docs/spec/spa-sample.md'
       - 'package.json'
       - 'package-lock.json'
       - 'vite.config.ts'
@@ -37,8 +39,9 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm ci
+      - run: npm run format-check -w ${{ env.WORKSPACE_NAME }}
       - run: npm run lint -w ${{ env.WORKSPACE_NAME }}
       - run: npm run build -w shared
       - run: npm run tsc -w ${{ env.WORKSPACE_NAME }}
       - run: npm run build -w ${{ env.WORKSPACE_NAME }}
-      - run: npm run test -w ${{ env.WORKSPACE_NAME }}
+      - run: npm run test-ci -w ${{ env.WORKSPACE_NAME }}

@@ -20,47 +20,49 @@ function getDevelopmentConfig(server: DevelopmentServer) {
     return null
   }
 
-  const authority = formatAuthority('127.0.0.1', address.port)
+  const authority = formatAuthority(baseConfig.host, address.port)
   return {
     ...baseConfig,
-    host: '127.0.0.1',
+    host: baseConfig.host,
     port: address.port,
     authority,
     origin: `http://${authority}`
   } satisfies RuntimeConfig
 }
 
-export default defineConfig(({ mode }) => ({
-  plugins: [
-    mode === 'test' ? react() : reactRouter(),
-    {
-      name: 'spa-api-proxy',
-      configureServer(server) {
-        server.middlewares.use((req, res, next) => {
-          const developmentConfig = getDevelopmentConfig(server)
-          void handleDevApiBoundary({
-            req,
-            res,
-            next,
-            config: developmentConfig,
-            proxy: apiProxy
+export default defineConfig(({ mode }) => {
+  return {
+    plugins: [
+      mode === 'test' ? react() : reactRouter(),
+      {
+        name: 'spa-api-proxy',
+        configureServer(server) {
+          server.middlewares.use((req, res, next) => {
+            const developmentConfig = getDevelopmentConfig(server)
+            void handleDevApiBoundary({
+              req,
+              res,
+              next,
+              config: developmentConfig,
+              proxy: apiProxy
+            })
           })
-        })
-        server.httpServer?.on('close', () => {
-          apiProxy.abortAll()
-        })
+          server.httpServer?.on('close', () => {
+            apiProxy.abortAll()
+          })
+        }
       }
+    ],
+    server: {
+      host: baseConfig.host,
+      port: 0,
+      strictPort: true,
+      cors: false,
+      allowedHosts: ['127.0.0.1', 'localhost', '::1']
+    },
+    test: {
+      environment: 'happy-dom',
+      exclude: ['**/node_modules/**', '**/dist/**', '**/.react-router/**']
     }
-  ],
-  server: {
-    host: '127.0.0.1',
-    port: 0,
-    strictPort: true,
-    cors: false,
-    allowedHosts: ['127.0.0.1', 'localhost', '::1']
-  },
-  test: {
-    environment: 'happy-dom',
-    exclude: ['**/node_modules/**', '**/dist/**', '**/.react-router/**']
   }
-}))
+})

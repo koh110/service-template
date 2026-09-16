@@ -17,8 +17,10 @@ const responseBody = {
 test('clientLoader fetches the same-origin endpoint exactly once', async () => {
   const originalFetch = globalThis.fetch
   let calls = 0
-  globalThis.fetch = async () => {
+  let requestInit: RequestInit | undefined
+  globalThis.fetch = async (_input, init) => {
     calls += 1
+    requestInit = init
     return new Response(JSON.stringify(responseBody), {
       status: 200,
       headers: { 'content-type': 'application/json' }
@@ -28,6 +30,8 @@ test('clientLoader fetches the same-origin endpoint exactly once', async () => {
   try {
     const result = await fetchUsers()
     expect(calls).toBe(1)
+    expect(requestInit?.credentials).toBe('include')
+    expect(requestInit?.cache).toBe('no-store')
     expect(result).toEqual({ ok: true, body: responseBody })
   } finally {
     globalThis.fetch = originalFetch
@@ -45,6 +49,26 @@ test('invalid response shape becomes a sanitized failure', async () => {
 
   try {
     await expect(fetchUsers()).resolves.toEqual({ ok: false, status: 502, body: 'Bad Gateway' })
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('non-success response becomes a sanitized authentication failure', async () => {
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = async () => {
+    return new Response('upstream secret details', {
+      status: 401,
+      headers: { 'content-type': 'text/plain' }
+    })
+  }
+
+  try {
+    await expect(fetchUsers()).resolves.toEqual({
+      ok: false,
+      status: 401,
+      body: 'Not authenticated'
+    })
   } finally {
     globalThis.fetch = originalFetch
   }

@@ -3,7 +3,6 @@ import fs from 'node:fs'
 import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
-import { gzipSync } from 'node:zlib'
 import { expect, test } from 'vite-plus/test'
 import { formatAuthority, type RuntimeConfig } from './config.js'
 import { createApplicationServer } from './static-server.js'
@@ -59,7 +58,7 @@ async function waitForPromise(promise: Promise<void>, timeoutMs: number) {
     promise,
     new Promise<void>((_resolve, reject) => {
       const timer = setTimeout(() => {
-        reject(new Error('timed out waiting for upstream disconnect'))
+        reject(new Error('timed out waiting for upstream cancellation'))
       }, timeoutMs)
       timer.unref()
     })
@@ -75,14 +74,10 @@ function createDist() {
 async function withProxyServer(
   {
     apiUri = 'http://upstream.invalid',
-    apiToken = 'test-token',
-    fetchImplementation = fetch,
-    now
+    fetchImplementation = fetch
   }: {
     apiUri?: string
-    apiToken?: string | null
     fetchImplementation?: typeof fetch
-    now?: () => number
   },
   run: (context: ProxyContext) => Promise<void>
 ) {
@@ -91,14 +86,13 @@ async function withProxyServer(
   const authority = formatAuthority('127.0.0.1', port)
   const config = {
     apiUri,
-    apiToken,
     host: '127.0.0.1',
     port,
     spaDistDir: root,
     authority,
     origin: `http://${authority}`
   } satisfies RuntimeConfig
-  const application = createApplicationServer({ config, fetchImplementation, now })
+  const application = createApplicationServer({ config, fetchImplementation })
   await new Promise<void>((resolve) => {
     application.server.listen(port, '127.0.0.1', resolve)
   })
@@ -117,18 +111,18 @@ function request({
   authority,
   requestPath = '/api/user',
   method = 'GET',
-  origin
+  cookie
 }: {
   port: number
   authority: string
   requestPath?: string
   method?: string
-  origin?: string
+  cookie?: string
 }) {
   return new Promise<HttpResponse>((resolve, reject) => {
     const headers: http.OutgoingHttpHeaders = { Host: authority }
-    if (origin !== undefined) {
-      headers.Origin = origin
+    if (cookie !== undefined) {
+      headers.Cookie = cookie
     }
     const client = http.request(
       {
@@ -157,190 +151,42 @@ function request({
   })
 }
 
-function repeatedName(length: number) {
-  return 'x'.repeat(length)
-}
-
-function deterministicName(length: number) {
-  const alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_'
-  let state = 0x12345678
-  let value = ''
-  for (let index = 0; index < length; index += 1) {
-    state = (state * 1_664_525 + 1_013_904_223) >>> 0
-    value += alphabet[state % alphabet.length]
+test('proxy requires the session cookie and does not call upstream without it', async () => {
+  let fetchCalls = 0
+  const fetchImplementation: typeof fetch = async () => {
+    fetchCalls += 1
+    return new Response('{}', { status: 200 })
   }
-  return value
-}
 
-function userBodyWithSize(size: number, createName = repeatedName) {
-  const emptyBody = JSON.stringify({
-    count: 1,
-    user: [{ id: 1, name: '', created_at: 0, updated_at: 0 }]
+  await withProxyServer({ fetchImplementation }, async ({ port, authority }) => {
+    for (const cookie of [
+      undefined,
+      'session=',
+      'session=one; session=two',
+      'session=invalid value'
+    ]) {
+      const response = await request({ port, authority, cookie })
+      expect(response.status).toBe(401)
+      expect(response.body).toBe('Not authenticated\n')
+    }
   })
-  const nameLength = size - Buffer.byteLength(emptyBody)
-  if (nameLength < 0) {
-    throw new Error('requested body size is too small')
-  }
-  const body = JSON.stringify({
-    count: 1,
-    user: [{ id: 1, name: createName(nameLength), created_at: 0, updated_at: 0 }]
-  })
-  if (Buffer.byteLength(body) !== size) {
-    throw new Error('could not create requested body size')
-  }
-  return body
-}
-
-test('proxy accepts decoded bodies at and below one MiB and rejects larger bodies', async () => {
-  for (const size of [1_048_575, 1_048_576, 1_048_577]) {
-    const body = userBodyWithSize(size)
-    await withProxyServer(
-      {
-        fetchImplementation: async () => {
-          return new Response(body, {
-            status: 200,
-            headers: { 'content-type': 'application/json' }
-          })
-        }
-      },
-      async ({ port, authority }) => {
-        const response = await request({ port, authority })
-        expect(response.status).toBe(size <= 1_048_576 ? 200 : 502)
-        expect(response.body).not.toContain('API token')
-      }
-    )
-  }
+  expect(fetchCalls).toBe(0)
 })
 
-test('proxy enforces decoded size for genuine gzip responses and aborts overflow', async () => {
-  for (const size of [1_048_575, 1_048_576, 1_048_577]) {
-    const decodedBody = userBodyWithSize(size, deterministicName)
-    const encodedBody = gzipSync(decodedBody)
-    let sentAll = false
-    let upstreamAbortedResolve: () => void = () => {}
-    const upstreamAborted = new Promise<void>((resolve) => {
-      upstreamAbortedResolve = resolve
-    })
-    const upstream = http.createServer((request, response) => {
-      response.on('error', () => {})
-      response.once('close', () => {
-        if (!sentAll) {
-          upstreamAbortedResolve()
-        }
-      })
-      response.writeHead(200, {
-        'content-type': 'application/json',
-        'content-encoding': 'gzip'
-      })
-      let offset = 0
-      function writeChunk() {
-        if (response.destroyed || request.destroyed) {
-          return
-        }
-        if (offset >= encodedBody.byteLength) {
-          const timer = setTimeout(() => {
-            if (response.destroyed) {
-              return
-            }
-            sentAll = true
-            response.end()
-          }, 250)
-          timer.unref()
-          return
-        }
-        const chunk = encodedBody.subarray(offset, offset + 16_384)
-        offset += chunk.byteLength
-        response.write(chunk)
-        const timer = setTimeout(writeChunk, 2)
-        timer.unref()
-      }
-      writeChunk()
-    })
-    await new Promise<void>((resolve) => {
-      upstream.listen(0, '127.0.0.1', resolve)
-    })
-    const address = upstream.address()
-    if (address === null || typeof address === 'string') {
-      throw new Error('upstream did not bind')
+test('proxy converts the session cookie to the upstream authorization header', async () => {
+  let upstreamUrl = ''
+  let authorization: string | null = null
+  let credentials: RequestCredentials | undefined
+  const fetchImplementation: typeof fetch = async (input, init) => {
+    if (typeof input === 'string') {
+      upstreamUrl = input
+    } else if (input instanceof URL) {
+      upstreamUrl = input.toString()
+    } else {
+      upstreamUrl = input.url
     }
-    let fetchAborted = false
-    const fetchImplementation: typeof fetch = async (input, init) => {
-      const signal = init?.signal
-      if (signal === undefined || signal === null) {
-        throw new Error('proxy signal was not provided')
-      }
-      signal.addEventListener('abort', () => {
-        fetchAborted = true
-      })
-      return await fetch(input, init)
-    }
-
-    try {
-      await withProxyServer(
-        {
-          apiUri: `http://127.0.0.1:${address.port}`,
-          fetchImplementation
-        },
-        async ({ port, authority }) => {
-          const response = await request({ port, authority })
-          expect(response.status).toBe(size <= 1_048_576 ? 200 : 502)
-          if (size > 1_048_576) {
-            expect(response.body).toBe('Bad Gateway\n')
-          }
-        }
-      )
-      if (size > 1_048_576) {
-        await waitForPromise(upstreamAborted, 2_000)
-        expect(fetchAborted).toBe(true)
-      }
-    } finally {
-      await closeServer(upstream)
-    }
-  }
-})
-
-test('proxy rejects an upstream redirect', async () => {
-  const upstream = http.createServer((_request, response) => {
-    response.writeHead(302, { location: 'http://evil.test/api/user' })
-    response.end()
-  })
-  await new Promise<void>((resolve) => {
-    upstream.listen(0, '127.0.0.1', resolve)
-  })
-  const address = upstream.address()
-  if (address === null || typeof address === 'string') {
-    throw new Error('upstream did not bind')
-  }
-
-  try {
-    await withProxyServer(
-      { apiUri: `http://127.0.0.1:${address.port}` },
-      async ({ port, authority }) => {
-        const response = await request({ port, authority })
-        expect(response.status).toBe(502)
-        expect(response.body).toBe('Bad Gateway\n')
-      }
-    )
-  } finally {
-    await closeServer(upstream)
-  }
-})
-
-test('proxy aborts when the monotonic deadline expires during processing', async () => {
-  let clockCalls = 0
-  let signalAborted = false
-  function now() {
-    clockCalls += 1
-    return clockCalls < 3 ? 0 : 5_001
-  }
-  const fetchImplementation: typeof fetch = async (_input, init) => {
-    const signal = init?.signal
-    if (signal === undefined || signal === null) {
-      throw new Error('proxy signal was not provided')
-    }
-    signal.addEventListener('abort', () => {
-      signalAborted = true
-    })
+    authorization = new Headers(init?.headers).get('authorization')
+    credentials = init?.credentials
     return new Response(
       JSON.stringify({
         count: 1,
@@ -350,11 +196,113 @@ test('proxy aborts when the monotonic deadline expires during processing', async
     )
   }
 
-  await withProxyServer({ fetchImplementation, now }, async ({ port, authority }) => {
-    const response = await request({ port, authority })
+  await withProxyServer(
+    { apiUri: 'https://api.example.test', fetchImplementation },
+    async ({ port, authority }) => {
+      const response = await request({
+        port,
+        authority,
+        cookie: 'theme=dark; session=opaque-session; locale=ja',
+        requestPath: '/api/user'
+      })
+      expect(response.status).toBe(200)
+      expect(JSON.parse(response.body)).toEqual({
+        count: 1,
+        user: [{ id: 1, name: 'Alice', created_at: 0, updated_at: 0 }]
+      })
+    }
+  )
+
+  expect(upstreamUrl).toBe('https://api.example.test/api/user')
+  expect(authorization).toBe('Bearer opaque-session')
+  expect(credentials).toBeUndefined()
+})
+
+test('proxy preserves sanitized authentication failures from upstream', async () => {
+  for (const [status, body] of [
+    [401, 'Not authenticated\n'],
+    [403, 'Forbidden\n']
+  ] as const) {
+    const fetchImplementation: typeof fetch = async () => {
+      return new Response('upstream secret details', {
+        status,
+        headers: { 'content-type': 'text/plain' }
+      })
+    }
+
+    await withProxyServer({ fetchImplementation }, async ({ port, authority }) => {
+      const response = await request({
+        port,
+        authority,
+        cookie: 'session=opaque-session'
+      })
+      expect(response.status).toBe(status)
+      expect(response.body).toBe(body)
+      expect(response.body).not.toContain('opaque-session')
+      expect(response.body).not.toContain('upstream secret details')
+    })
+  }
+})
+
+test('proxy returns a sanitized gateway error for upstream server failures', async () => {
+  const fetchImplementation: typeof fetch = async () => {
+    return new Response('upstream secret details', {
+      status: 500,
+      headers: { 'content-type': 'text/plain' }
+    })
+  }
+
+  await withProxyServer({ fetchImplementation }, async ({ port, authority }) => {
+    const response = await request({
+      port,
+      authority,
+      cookie: 'session=opaque-session'
+    })
     expect(response.status).toBe(502)
+    expect(response.body).toBe('Bad Gateway\n')
+    expect(response.body).not.toContain('opaque-session')
+    expect(response.body).not.toContain('upstream secret details')
   })
-  expect(signalAborted).toBe(true)
+})
+
+test('proxy passes the successful response to the browser without server-side shape validation', async () => {
+  const fetchImplementation: typeof fetch = async () => {
+    return new Response('{"unexpected":"shape"}', {
+      status: 200,
+      headers: { 'content-type': 'application/json' }
+    })
+  }
+
+  await withProxyServer({ fetchImplementation }, async ({ port, authority }) => {
+    const response = await request({
+      port,
+      authority,
+      cookie: 'session=opaque-session'
+    })
+    expect(response.status).toBe(200)
+    expect(response.body).toBe('{"unexpected":"shape"}')
+    expect(response.headers['cache-control']).toBe('no-store')
+    expect(response.headers['x-content-type-options']).toBe('nosniff')
+  })
+})
+
+test('proxy rejects an upstream redirect and does not follow it', async () => {
+  let requestInit: RequestInit | undefined
+  const fetchImplementation: typeof fetch = async (_input, init) => {
+    requestInit = init
+    throw new TypeError('redirect disallowed')
+  }
+
+  await withProxyServer({ fetchImplementation }, async ({ port, authority }) => {
+    const response = await request({
+      port,
+      authority,
+      cookie: 'session=opaque-session'
+    })
+    expect(response.status).toBe(502)
+    expect(response.body).toBe('Bad Gateway\n')
+  })
+  expect(requestInit?.redirect).toBe('error')
 })
 
 test('proxy aborts an upstream fetch when the client disconnects', async () => {
@@ -390,7 +338,7 @@ test('proxy aborts an upstream fetch when the client disconnects', async () => {
         host: '127.0.0.1',
         port,
         path: '/api/user',
-        headers: { Host: authority }
+        headers: { Host: authority, Cookie: 'session=opaque-session' }
       },
       (response) => {
         response.resume()
@@ -400,7 +348,7 @@ test('proxy aborts an upstream fetch when the client disconnects', async () => {
     client.end()
     await fetchStarted
     client.destroy()
-    await fetchAborted
+    await waitForPromise(fetchAborted, 2_000)
   })
 })
 
@@ -432,10 +380,14 @@ test('proxy aborts an upstream fetch during application shutdown', async () => {
   }
 
   await withProxyServer({ fetchImplementation }, async ({ port, authority, application }) => {
-    const responsePromise = request({ port, authority })
+    const responsePromise = request({
+      port,
+      authority,
+      cookie: 'session=opaque-session'
+    })
     await fetchStarted
     application.abortAll()
-    await fetchAborted
+    await waitForPromise(fetchAborted, 2_000)
     const response = await responsePromise
     expect(response.status).toBe(502)
   })

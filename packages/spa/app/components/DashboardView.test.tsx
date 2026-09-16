@@ -31,6 +31,12 @@ const failureResult = {
   body: 'Bad Gateway'
 } satisfies UserLoadResult
 
+const authenticationFailureResult = {
+  ok: false,
+  status: 401,
+  body: 'Not authenticated'
+} satisfies UserLoadResult
+
 afterEach(() => {
   cleanup()
 })
@@ -67,4 +73,13 @@ test('failure fixture shows offline status without exposing upstream details', (
   expect(screen.getByRole('status', { name: 'API OFFLINE' })).toBeTruthy()
   expect(screen.getByRole('alert').textContent).toContain('Service APIへ接続できません')
   expect(screen.queryByText('Bad Gateway')).toBeNull()
+})
+
+test('authentication failure fixture asks for a session without showing a transport error', () => {
+  render(<DashboardView result={authenticationFailureResult} />)
+
+  expect(screen.getByRole('status', { name: 'AUTH REQUIRED' })).toBeTruthy()
+  expect(screen.getByRole('heading', { name: 'セッションが必要です' })).toBeTruthy()
+  expect(screen.getByText(/Next\.jsサンプルでログイン/)).toBeTruthy()
+  expect(screen.queryByText('Service APIへ接続できません')).toBeNull()
 })

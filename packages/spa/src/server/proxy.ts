@@ -1,72 +1,171 @@
-import { performance } from 'node:perf_hooks'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { RuntimeConfig } from './config.js'
-import { parseUserResponse } from '../api-contract.js'
-import { sendJsonResponse, sendTextResponse } from './http-response.js'
+import { sendTextResponse } from './http-response.js'
 
 const PROXY_TIMEOUT_MS = 5_000
-const MAX_BODY_BYTES = 1_048_576
+const SESSION_COOKIE_NAME = 'session'
+const COOKIE_OCTETS = /^[\u0021\u0023-\u002B\u002D-\u003A\u003C-\u005B\u005D-\u007E]+$/u
 
 export type ApiProxy = ReturnType<typeof createApiProxy>
 
-type ProxyOptions = Pick<RuntimeConfig, 'apiUri' | 'apiToken'> & {
+type ProxyOptions = Pick<RuntimeConfig, 'apiUri'> & {
   fetchImplementation?: typeof fetch
-  now?: () => number
 }
 
-function assertDeadline(deadline: number, now: () => number, abort: () => void) {
-  if (now() >= deadline) {
-    abort()
-    throw new Error('proxy deadline exceeded')
+function readSessionCookie(request: IncomingMessage) {
+  const cookieHeader = request.headers.cookie
+  if (cookieHeader === undefined) {
+    return null
   }
+
+  let session: string | null = null
+  for (const cookie of cookieHeader.split(';')) {
+    const separator = cookie.indexOf('=')
+    if (separator <= 0 || cookie.slice(0, separator).trim() !== SESSION_COOKIE_NAME) {
+      continue
+    }
+    if (session !== null) {
+      return null
+    }
+    const value = cookie.slice(separator + 1).trim()
+    if (value.length === 0) {
+      return null
+    }
+    if (!COOKIE_OCTETS.test(value)) {
+      return null
+    }
+    session = value
+  }
+  return session
 }
 
-async function readResponseBody({
+function sendAuthenticationFailure(response: ServerResponse, method: string, status: 401 | 403) {
+  sendTextResponse({
+    response,
+    method,
+    status,
+    body: status === 403 ? 'Forbidden\n' : 'Not authenticated\n'
+  })
+}
+
+function sendBadGateway(response: ServerResponse, method: string) {
+  sendTextResponse({
+    response,
+    method,
+    status: 502,
+    body: 'Bad Gateway\n'
+  })
+}
+
+async function sendUpstreamJson({
   response,
-  checkDeadline,
-  abort
+  method,
+  body
 }: {
-  response: Response
-  checkDeadline: () => void
-  abort: () => void
+  response: ServerResponse
+  method: string
+  body: Response['body']
 }) {
-  if (response.body === null) {
-    throw new Error('upstream response has no body')
+  response.writeHead(200, {
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'no-store',
+    'x-content-type-options': 'nosniff'
+  })
+  if (body === null || method === 'HEAD') {
+    await body?.cancel()
+    response.end()
+    return
   }
 
-  const reader = response.body.getReader()
-  const chunks: Buffer[] = []
-  let totalBytes = 0
+  const reader = body.getReader()
   try {
     while (true) {
-      checkDeadline()
-      const next = await reader.read()
-      if (next.done) {
+      const chunk = await reader.read()
+      if (chunk.done) {
         break
       }
-      const chunk = Buffer.from(next.value)
-      if (totalBytes + chunk.byteLength > MAX_BODY_BYTES) {
-        abort()
-        await reader.cancel()
-        throw new Error('upstream response is too large')
+      if (response.destroyed) {
+        throw new Error('client closed response')
       }
-      chunks.push(chunk)
-      totalBytes += chunk.byteLength
+      if (!response.write(chunk.value)) {
+        await new Promise<void>((resolve, reject) => {
+          let settled = false
+          const cleanup = () => {
+            response.off('drain', onDrain)
+            response.off('error', onError)
+            response.off('close', onClose)
+          }
+          const onDrain = () => {
+            if (settled) {
+              return
+            }
+            settled = true
+            cleanup()
+            resolve()
+          }
+          const onError = (error: Error) => {
+            if (settled) {
+              return
+            }
+            settled = true
+            cleanup()
+            reject(error)
+          }
+          const onClose = () => {
+            if (settled || response.writableFinished) {
+              return
+            }
+            settled = true
+            cleanup()
+            reject(new Error('client closed response'))
+          }
+          response.once('drain', onDrain)
+          response.once('error', onError)
+          response.once('close', onClose)
+        })
+      }
     }
+
+    await new Promise<void>((resolve, reject) => {
+      const cleanup = () => {
+        response.off('finish', onFinish)
+        response.off('error', onError)
+        response.off('close', onClose)
+      }
+      const onFinish = () => {
+        cleanup()
+        resolve()
+      }
+      const onError = (error: Error) => {
+        cleanup()
+        reject(error)
+      }
+      const onClose = () => {
+        if (response.writableFinished) {
+          return
+        }
+        cleanup()
+        reject(new Error('client closed response'))
+      }
+      response.once('finish', onFinish)
+      response.once('error', onError)
+      response.once('close', onClose)
+      response.end()
+    })
+  } catch (error) {
+    try {
+      await reader.cancel()
+    } catch {
+      // The upstream stream may already be closed after a client disconnect.
+    }
+    response.destroy()
+    throw error
   } finally {
     reader.releaseLock()
   }
-
-  checkDeadline()
-  return Buffer.concat(chunks, totalBytes).toString('utf8')
 }
 
-export function createApiProxy({
-  apiUri,
-  apiToken,
-  fetchImplementation = fetch,
-  now = () => performance.now()
-}: ProxyOptions) {
+export function createApiProxy({ apiUri, fetchImplementation = fetch }: ProxyOptions) {
   const activeControllers = new Set<AbortController>()
 
   function abortAll() {
@@ -82,13 +181,9 @@ export function createApiProxy({
     request: IncomingMessage
     response: ServerResponse
   }) {
-    if (apiToken === null) {
-      sendTextResponse({
-        response,
-        method: request.method ?? 'GET',
-        status: 503,
-        body: 'API token is not configured\n'
-      })
+    const sessionCookie = readSessionCookie(request)
+    if (sessionCookie === null) {
+      sendAuthenticationFailure(response, request.method ?? 'GET', 401)
       return
     }
 
@@ -105,72 +200,43 @@ export function createApiProxy({
     const timeout = setTimeout(() => {
       controller.abort()
     }, PROXY_TIMEOUT_MS)
-    const deadline = now() + PROXY_TIMEOUT_MS
-    function checkDeadline() {
-      assertDeadline(deadline, now, () => {
-        controller.abort()
-      })
-    }
 
     try {
-      checkDeadline()
       const upstreamResponse = await fetchImplementation(new URL('/api/user', apiUri), {
         method: 'GET',
         redirect: 'error',
         headers: {
-          Authorization: `Bearer ${apiToken}`,
+          Authorization: `Bearer ${sessionCookie}`,
           Accept: 'application/json'
         },
         signal: controller.signal
       })
-      checkDeadline()
       if (upstreamResponse.status !== 200) {
+        const status = upstreamResponse.status
+        await upstreamResponse.body?.cancel()
+        if (status === 401 || status === 403) {
+          settled = true
+          sendAuthenticationFailure(response, request.method ?? 'GET', status)
+          return
+        }
         throw new Error('upstream response was not successful')
       }
 
-      const upstreamBody = await readResponseBody({
-        response: upstreamResponse,
-        checkDeadline,
-        abort: () => {
-          controller.abort()
-        }
-      })
-      checkDeadline()
-      let payload: unknown
-      try {
-        payload = JSON.parse(upstreamBody)
-      } catch {
-        throw new Error('upstream response was not JSON')
-      }
-      checkDeadline()
-      const parsed = parseUserResponse(payload)
-      if (parsed === null) {
-        throw new Error('upstream response shape was invalid')
-      }
-      checkDeadline()
-      const serialized = JSON.stringify(parsed)
-      if (serialized === undefined) {
-        throw new Error('response serialization failed')
-      }
-      checkDeadline()
       if (response.destroyed) {
+        controller.abort()
+        await upstreamResponse.body?.cancel()
         return
       }
-      settled = true
-      sendJsonResponse({
+      await sendUpstreamJson({
         response,
         method: request.method ?? 'GET',
-        body: serialized
+        body: upstreamResponse.body
       })
+      settled = true
     } catch {
       if (!response.headersSent && !response.destroyed) {
         settled = true
-        sendTextResponse({
-          response,
-          method: request.method ?? 'GET',
-          status: 502,
-          body: 'Bad Gateway\n'
-        })
+        sendBadGateway(response, request.method ?? 'GET')
       }
     } finally {
       clearTimeout(timeout)

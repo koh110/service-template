@@ -16,9 +16,12 @@ export function parseRequestTarget(requestUrl: string | undefined): RequestTarge
 
   const queryIndex = rawTarget.indexOf('?')
   const fragmentIndex = rawTarget.indexOf('#')
-  const suffixIndex = [queryIndex, fragmentIndex]
-    .filter((index) => index >= 0)
-    .reduce((minimum, index) => Math.min(minimum, index), rawTarget.length)
+  let suffixIndex = rawTarget.length
+  for (const index of [queryIndex, fragmentIndex]) {
+    if (index >= 0 && index < suffixIndex) {
+      suffixIndex = index
+    }
+  }
   const rawPathname = rawTarget.slice(0, suffixIndex)
   const hasSuffix = suffixIndex < rawTarget.length
 
@@ -29,12 +32,19 @@ export function parseRequestTarget(requestUrl: string | undefined): RequestTarge
     return { kind: 'bad-request' }
   }
 
+  let hasParentSegment = false
+  for (const segment of pathname.split('/')) {
+    if (segment === '..') {
+      hasParentSegment = true
+      break
+    }
+  }
   if (
     pathname.length === 0 ||
     pathname.startsWith('//') ||
     pathname.includes('\0') ||
     pathname.includes('\\') ||
-    pathname.split('/').some((segment) => segment === '..')
+    hasParentSegment
   ) {
     return { kind: 'bad-request' }
   }

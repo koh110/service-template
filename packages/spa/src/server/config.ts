@@ -7,7 +7,6 @@ type Environment = Record<string, string | undefined>
 
 export type RuntimeConfig = {
   apiUri: string
-  apiToken: string | null
   host: string
   port: number
   spaDistDir: string
@@ -66,10 +65,6 @@ function resolveApiUri(raw: string | undefined) {
   return url.origin
 }
 
-function trimAsciiWhitespace(value: string) {
-  return value.replace(/^[\t-\r ]+|[\t-\r ]+$/g, '')
-}
-
 export function formatAuthority(host: string, port: number) {
   const authorityHost = host.includes(':') && !host.startsWith('[') ? `[${host}]` : host
   return `${authorityHost}:${port}`
@@ -79,7 +74,6 @@ export function loadConfig(environment: Environment = process.env) {
   const host = resolveHost(environment.HOST)
   const port = resolvePort(environment.PORT)
   const authority = formatAuthority(host, port)
-  const token = trimAsciiWhitespace(environment.API_TOKEN ?? '')
   const configuredDistDir = (environment.SPA_DIST_DIR ?? '').trim()
   const spaDistDir =
     configuredDistDir.length > 0
@@ -88,7 +82,6 @@ export function loadConfig(environment: Environment = process.env) {
 
   return {
     apiUri: resolveApiUri(environment.API_URI),
-    apiToken: token.length > 0 ? token : null,
     host,
     port,
     spaDistDir,

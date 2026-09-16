@@ -40,7 +40,13 @@ export default defineConfig({
       {
         // パッケージ横断のコーディング規約(AGENTS.md)。config/test ファイルの除外は
         // ルール実装側(lint-rules/rules/)がファイル名で判定する。
-        files: ['packages/api/src/**', 'packages/client/src/**', 'packages/task/src/**'],
+        files: [
+          'packages/api/src/**',
+          'packages/client/src/**',
+          'packages/spa/app/**',
+          'packages/spa/src/**',
+          'packages/task/src/**'
+        ],
         rules: {
           'coding-style/no-process-env-outside-config': 'error',
           'coding-style/enforce-zod-entrypoint': 'error'

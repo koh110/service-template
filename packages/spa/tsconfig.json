@@ -19,7 +19,6 @@
   },
   "include": [
     "app",
-    "src",
     "vite.config.ts",
     "react-router.config.ts",
     ".react-router/types/**/*"

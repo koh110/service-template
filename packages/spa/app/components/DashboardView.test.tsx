@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, expect, test } from 'vite-plus/test'
 
 import { HydrateFallback } from '../root'
-import type { UserLoadResult } from '../lib/api.client'
+import type { UserLoadResult } from '../lib/user.client'
 import { DashboardView } from './DashboardView'
 
 const successData = {
@@ -49,7 +49,7 @@ test('loading fixture shows an accessible pending state', () => {
 })
 
 test('success fixture shows online state, summary, and every user', () => {
-  render(<DashboardView result={{ ok: true, body: successData }} />)
+  render(<DashboardView result={{ ok: true, status: 200, body: successData }} />)
 
   expect(screen.getByRole('status', { name: 'API ONLINE' })).toBeTruthy()
   expect(screen.getByRole('heading', { name: '登録ユーザー' })).toBeTruthy()
@@ -59,7 +59,9 @@ test('success fixture shows online state, summary, and every user', () => {
 })
 
 test('empty fixture shows a domain-specific empty state', () => {
-  render(<DashboardView result={{ ok: true, body: { count: 0, user: [] } }} />)
+  render(
+    <DashboardView result={{ ok: true, status: 200, body: { count: 0, user: [] } }} />
+  )
 
   expect(screen.getByRole('status', { name: 'API ONLINE' })).toBeTruthy()
   expect(screen.getByRole('heading', { name: 'ユーザーがありません' })).toBeTruthy()

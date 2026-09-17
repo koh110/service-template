@@ -22,9 +22,10 @@ type BrowserHeaderField<P> = P extends { header: infer H }
 
 type BrowserParameters<P> = Omit<P, 'header'> & BrowserHeaderField<P>
 
-type BrowserParameterField<P> = [RequiredKeys<BrowserParameters<P>>] extends [never]
-  ? { parameters?: BrowserParameters<P> }
-  : { parameters: BrowserParameters<P> }
+type BrowserParameterField<P> =
+  [RequiredKeys<BrowserParameters<P>>] extends [never]
+    ? { parameters?: BrowserParameters<P> }
+    : { parameters: BrowserParameters<P> }
 
 type BrowserOptions<
   T extends keyof schema.paths,

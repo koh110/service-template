@@ -11,7 +11,7 @@
     "test": "vp test --config=./vite.config.ts",
     "test-ci": "vp test run --config=./vite.config.ts --maxWorkers=1",
     "format": "vp fmt package.json react-router.config.ts vite.config.ts app --write",
-    "format-check": "vp fmt package.json react-router.config.ts vite.config.ts app --check",
+    "format-check": "vp fmt package.json react-router.config.ts vite.config.ts app --write && git diff --exit-code -- app/lib/api.client.ts",
     "lint": "vp lint react-router.config.ts vite.config.ts app",
     "lint-fix": "vp lint react-router.config.ts vite.config.ts app --fix"
   },

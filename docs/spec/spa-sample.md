@@ -65,7 +65,7 @@ fetch('/api/user', {
 }
 ```
 
-`count` と `user` の shape、件数、数値、timestamp は browser 側の `parseUserResponse` で検証する。
+response type は Next.js client と同様に `shared/src/schema` の `/api/user` `GET` 200 response から直接導出する。SPA 独自の API contract、response interface、Zod schema は再定義しない。API contract の定義元は TypeSpec から生成される shared schema に一本化する。
 
 ## Deployment boundary
 
@@ -139,9 +139,9 @@ UI は `GET /api/user` 以外の API call を行わない。
 ## Error handling
 
 - 401/403: authentication failure として表示する。
-- その他の non-success / network failure: connection failure として表示する。
-- HTTP 200 でも response JSON が不正、`count` と `user.length` が不一致、必須 field が不正: browser 側で failure state にする。
+- その他の non-success / network failure / JSON parse failure: connection failure として表示する。
 - upstream の error body や credential を UI / console へ出さない。
+- response shape の重複 runtime schema は SPA 側へ追加しない。型は generated shared schema から導出する。
 
 ## Out of scope
 
@@ -149,6 +149,7 @@ UI は `GET /api/user` 以外の API call を行わない。
 - SPA package 内の static file server 実装
 - SPA package 内の API proxy / BFF
 - SPA package 内の cookie-to-Authorization adapter
+- SPA 独自の API contract / response schema
 - SPA 独自の login、session 発行、refresh、logout
 - JavaScript からの cookie 読み取り
 - SSR / server action
@@ -160,6 +161,7 @@ UI は `GET /api/user` 以外の API call を行わない。
 - `packages/spa` が React Router v7 + Vite `ssr: false` の static SPA として build できる。
 - build artifact は `dist/public` の静的ファイルだけで構成され、production runtime Node server を必要としない。
 - browser client は `credentials: 'include'` で same-origin `/api/user` を1回取得する。
+- `/api/user` response type は `shared/src/schema` から直接導出し、SPA package に重複 contract/schema を持たない。
 - browser code は session cookie を直接読まない。
 - SPA package に API proxy、cookie forwarding、Authorization injection の server code が存在しない。
 - nginx 等から `dist/public` を配信し、application route を `index.html` へ fallback できる。

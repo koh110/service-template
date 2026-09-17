@@ -2,15 +2,24 @@
 
 ## Overview
 
-`service-template`へ、既存のNext.jsサンプル（`packages/client`）と並ぶ、React Router v7 + ViteのSPAサンプルを追加する。目的は、limit-monitor風のdark dashboardを、SSRやserver actionなしで実装すること。
+`service-template` に、既存の Next.js サンプル (`packages/client`) と並ぶ React Router v7 + Vite の SPA サンプルを追加する。
 
-SPAのbrowser codeは認証credentialを生成・保持・展開しない。Next.jsサンプルが発行する`session` cookieを、browserの通常のcookie送信機能で同一originのAPIへ渡す。
+`packages/spa` は runtime application server を持たない。build の成果物は静的ファイルだけであり、nginx、CDN、object storage + CDN など任意の static hosting から配信できることを前提とする。
 
-## Inputs and outputs
+React Router は `ssr: false` の SPA mode を使う。build 時に `index.html` を生成するための React Router の server entry は存在してもよいが、production runtime の Node server ではない。
+
+## Runtime contract
+
+SPA の runtime contract は次の2点だけとする。
+
+1. `dist/public` 以下の静的ファイルを配信する。
+2. browser から見て same-origin の `GET /api/user` が利用できる。
+
+SPA package 自身は `/api/user` を実装、proxy、認証変換しない。
 
 ### Browser request
 
-初回画面表示時、browserは次のsame-origin requestを1回だけ実行する。
+初回画面表示時、browser は次の same-origin request を1回だけ実行する。
 
 ```http
 GET /api/user
@@ -18,11 +27,23 @@ Accept: application/json
 Cookie: session=<httpOnly session value>
 ```
 
-`session`はJavaScriptから読まない。`fetch`へ`credentials: 'include'`を明示し、browserがcookieを送る。
+browser code は次の形で取得する。
+
+```ts
+fetch('/api/user', {
+  cache: 'no-store',
+  credentials: 'include',
+  headers: {
+    Accept: 'application/json'
+  }
+})
+```
+
+`session` cookie の値を JavaScript から読まない。credential を build-time env、HTML、client bundle、localStorage へ渡さない。
 
 ### API response
 
-既存APIの`GET /api/user` responseを表示データとして使用する。
+既存 API の `GET /api/user` response を表示データとして使用する。
 
 ```json
 {
@@ -44,149 +65,104 @@ Cookie: session=<httpOnly session value>
 }
 ```
 
-`count`と`user`のshape、件数、数値・timestampはbrowser側の`parseUserResponse`で検証する。server側で表示用JSONをparse・再serialize・補正しない。
+`count` と `user` の shape、件数、数値、timestamp は browser 側の `parseUserResponse` で検証する。
 
-## Authentication boundary
+## Deployment boundary
 
-Next.jsサンプルの次の実装を参照する。
+`packages/spa` は static hosting だけを担当する。API routing と authentication boundary は deployment environment の責務とする。
 
-- `packages/client/src/app/_lib/auth/index.ts`: cookie名`session`
-- `packages/client/src/app/api/auth/session/route.ts`: session cookieを発行する認証境界
-- `packages/client/src/app/proxy/api/[...path]/route.ts`: httpOnly cookieをserver側で読み、既存APIのAuthorizationへ変換するproxy
+現在の `packages/api` は `Authorization` header を要求するため、既存 API をそのまま利用する場合は reverse proxy / ingress / BFF など SPA package の外側で `session` cookie を upstream の Authorization へ変換する。
 
-SPA側の契約は次の通り。
+この変換は SPA の runtime server として実装しない。
 
-1. SPAのJavaScriptへcredentialを埋め込まない。
-2. `session` cookieの値をJavaScriptで読む、localStorageへコピーする、HTMLへ出力する処理を追加しない。
-3. browserの`fetch('/api/user', { credentials: 'include' })`を使う。
-4. 既存APIがAuthorization headerを要求するため、standalone Node配信serverを利用する場合だけ、server側に薄いcookie-to-header adapterを置く。
-5. adapterはsession cookieの有無を確認し、既存APIへ`Authorization: Bearer <session value>`を付けるだけとする。認証判断は既存APIへ委譲し、SPA serverでsession claimsを解釈しない。
-6. adapterはupstreamの成功bodyをそのままbrowserへ返し、shape validation・表示用変換・件数計算を行わない。
+### nginx example
 
-このadapterはSPAの業務serverではなく、既存APIとhttpOnly cookieのtransport境界である。Next.js proxy routeを持つhostへSPAを組み込む場合は、同じoriginの`/api/user`をhost側へ委譲してもよい。
+以下は deployment topology の一例であり、SPA application code の一部ではない。
 
-## Tech stack and runtime
+```nginx
+server {
+    listen 8080;
+    root /srv/service-template-spa;
 
-- workspace: `spa`
-- React 19
-- React Router v7
-- Vite
-- React Router config: `ssr: false`
-- TypeScript
-- Node.js HTTP server: build済み静的asset配信と、必要なcookie-to-header adapterだけを担当
-- `zod`: browser側response validation
+    location = /api/user {
+        proxy_set_header Authorization "Bearer $cookie_session";
+        proxy_pass http://api:8000/api/user;
+    }
 
-### Runtime environment
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+```
 
-- `API_URI`: standalone adapterが接続する既存API origin。browserへ公開しない。既定値は`http://localhost:8000`。
-- `HOST`: standalone serverのbind address。既定値は`127.0.0.1`。loopback以外は拒否する。
-- `PORT`: standalone serverのport。既定値は`8789`。
-- `SPA_DIST_DIR`: 静的配信root。未指定時は`dist/public`。
+これにより browser からは static assets と `/api/user` が同一 origin に見える。`GET /api/user` 以外へ cookie-to-Authorization を一般化する場合は、state-changing request の CSRF 方針を別途設計する。
 
-固定credentialを指定する環境変数は持たない。sessionはhostの認証フローが発行するhttpOnly cookieであり、SPA buildへ取り込まない。
+同じ契約を満たせるなら nginx 以外の hosting / gateway でもよい。
 
-session cookieはhost単位で送信されるため、Next.jsサンプルとSPAを同じhostnameで開く。既定値を使う場合は両方を`127.0.0.1`で開き、`localhost`を使う場合は`HOST=localhost`で起動して両方を`localhost`で開く。portが異なってもcookieのhost条件は変わらない。
-
-### Commands
+## Development and preview
 
 ```bash
 npm run dev -w spa
 npm run tsc -w spa
-npm run format-check -w spa
 npm run build -w spa
 npm run start -w spa
 npm run test -w spa
 ```
 
-`build`は`dist/public`へbrowser assetを生成し、standalone実行用のserver codeだけを`dist/server`へ生成する。`start`は`dist/public`を静的配信する。
+- `dev`: Vite development server。API proxy は持たない。
+- `build`: `dist/public` に static SPA artifact を生成する。
+- `start`: `vite preview --outDir dist/public` で build artifact を静的配信するだけ。production server としては使わない。
+- API と結合して確認する場合は、Vite/nginx の前段または別 gateway で same-origin `/api/user` を用意する。
 
-## Interface
-
-### Application route
+## Application routes
 
 - `/`: dashboard
-- `/dashboard`などextensionless path: static serverのSPA fallback。application routeを増やさない。
+- `/dashboard` など extensionless application path: hosting 側で `index.html` へ fallback する
 - asset path: `dist/public/assets/*`
 
-### Dashboard
+static host は application route を `index.html` へ fallback できればよく、Node 固有の runtime を要求しない。
+
+## Dashboard
 
 - header: service name、接続状態
 - summary: user count
 - user list: name、identifier、created/updated timestamp
-- loading: skeletonまたはloading indicator
-- success: usersを表示
-- empty: countが0の場合の空状態
-- failure: connection/API/auth failureをユーザー向けの固定文言で表示
-- small viewport: 1列化し、横スクロール・text clippingを発生させない
-- visual direction: limit-monitorを参考にしたdark surface、低彩度のborder、greenのonline accent
+- loading: skeleton または loading indicator
+- success: users を表示
+- empty: count が0の場合の空状態
+- failure: connection/API/auth failure を利用者向け固定文言で表示
+- small viewport: 1列化し、横スクロール・text clipping を発生させない
+- visual direction: limit-monitor を参考にした dark surface、低彩度の border、green の online accent
 
-UIは`GET /api/user`以外のAPI callを行わない。refresh操作を追加する場合も、明示操作につき1 requestとする。
-
-### Standalone transport
-
-standalone serverのAPI boundaryは`GET /api/user`だけを扱う。
-
-- session cookieなし: `401 Not authenticated\n`
-- upstream success: JSON bodyをbrowserへ転送、`Cache-Control: no-store`
-- upstreamの401/403: statusを保持した固定認証失敗文言。その他の非成功、redirect、network error、timeout: `502 Bad Gateway\n`
-- query付き`/api/user`、未知の`/api/*`: APIとして処理しない
-- static path: GET/HEADだけを受理し、extensionless pathだけSPA fallbackする
-
-serverはupstream responseのshapeを検証しない。browser clientがHTTP success bodyをparseし、invalid shapeをfailure stateへ変換する。
-
-### Development transport
-
-Vite dev serverでもbrowserから見えるendpointはsame-originの`/api/user`とする。dev middlewareはstandalone adapterと同じcookie forwardingを使う。Vite serverのauthorityが確定していない間はstatic requestをViteへ委譲し、API requestを推測したupstreamへ送らない。
+UI は `GET /api/user` 以外の API call を行わない。
 
 ## Error handling
 
-- session cookieなし: login/sessionが必要な状態としてfailure UIを表示する。
-- upstreamの401/403: transportはstatusを保持した固定認証失敗文言へ変換する。5xxその他の非成功は固定502へ変換し、いずれもupstream bodyをbrowserへ漏らさない。
-- redirect/network/timeout: 固定502へ変換する。
-- HTTP 200でもresponse JSONが不正、`count`と`user.length`が不一致、必須fieldが不正: browser側でfailure UIを表示する。
-- malformed URL、path traversal、配信root外、symlink asset: static serverは固定400/404で拒否する。
-- credentialやupstream内部情報をHTML、client bundle、console、error responseへ出力しない。
-
-## Non-functional requirements
-
-- browser bundleにcredentialを含めない。
-- `session` cookieはJavaScriptから直接参照しない。
-- 初回navigationのuser GETを1回だけ行い、user件数に比例するAPI callを行わない。
-- serverの業務処理はcookie forwardingと静的配信に限定する。response validation、表示データ変換、session claims処理、refresh token管理はSPA serverへ追加しない。
-- static serverはloopback bind、exact authority/originチェック、raw URLの安全なparse、配信root外拒否、symlink拒否、`O_NOFOLLOW`での最終file openを維持する。
-- UIは390px相当のsmall viewportからdesktopまで横方向の欠落・overflow・clippingなしで表示する。
-- CIはSPAのformat、format-check、lint、shared build、typecheck、build、testを実行する。既存`packages/client`とsharedの検証も壊さない。
+- 401/403: authentication failure として表示する。
+- その他の non-success / network failure: connection failure として表示する。
+- HTTP 200 でも response JSON が不正、`count` と `user.length` が不一致、必須 field が不正: browser 側で failure state にする。
+- upstream の error body や credential を UI / console へ出さない。
 
 ## Out of scope
 
-- SPA独自のlogin画面、session発行、session refresh、logout
-- JavaScriptからのcookie読み取り
-- credentialをVite define、public env、localStorageへ渡すこと
-- SSR、React Router loader/actionを使ったserver rendering
-- user以外のAPI endpoint
-- limit-monitor固有のmeter、quota、billing APIの追加
-- API schemaや既存APIの認証実装変更
-- production deploy、DNS、external reverse proxy設定
+- SPA package 内の Node runtime server
+- SPA package 内の static file server 実装
+- SPA package 内の API proxy / BFF
+- SPA package 内の cookie-to-Authorization adapter
+- SPA 独自の login、session 発行、refresh、logout
+- JavaScript からの cookie 読み取り
+- SSR / server action
+- user 以外の API endpoint
+- production gateway / DNS / TLS の実装
 
 ## Acceptance criteria
 
-- `packages/spa`がnpm workspaceとして`packages/client`と併存する。
-- React 19 + React Router v7 + Vite `ssr: false`のbuildが成功する。
-- browser clientが`credentials: 'include'`でsame-origin `/api/user`を1回取得する。
-- client bundle、HTML、console、error responseへcredentialが出ない。
-- standalone serverに固定credential設定がなく、session cookie不在時は401になる。
-- session cookieがある場合だけadapterが既存APIへAuthorizationを付け、成功bodyをbrowserへ返す。
-- adapterがupstream shapeを検証・再serializeせず、client側validationがinvalid responseをfailureへ変換する。
-- upstreamの401/403は認証失敗文言、それ以外の非成功、redirect、network error、timeoutは固定502になる。
-- static asset、SPA fallback、authority、origin、path traversal、symlink境界がテストされる。
-- loading、success、empty、failureのdashboard stateがdeterministic fixtureで確認できる。
-- small viewportとdesktopで横overflow・clippingがない。
-- SPAおよび既存client/sharedのformat、lint、typecheck、build、testが成功する。
-
-## Verified references
-
-- `packages/client/src/app/_lib/auth/index.ts`: `session` cookie name
-- `packages/client/src/app/api/auth/session/route.ts`: host-side session route
-- `packages/client/src/app/proxy/api/[...path]/route.ts`: cookie-to-Authorization proxy pattern
-- `packages/api/src/lib/middleware.ts`: existing API Authorization requirement
-- `packages/shared/typespec/user.tsp`: `GET /api/user` response contract
+- `packages/spa` が React Router v7 + Vite `ssr: false` の static SPA として build できる。
+- build artifact は `dist/public` の静的ファイルだけで構成され、production runtime Node server を必要としない。
+- browser client は `credentials: 'include'` で same-origin `/api/user` を1回取得する。
+- browser code は session cookie を直接読まない。
+- SPA package に API proxy、cookie forwarding、Authorization injection の server code が存在しない。
+- nginx 等から `dist/public` を配信し、application route を `index.html` へ fallback できる。
+- `/api/user` の実装方法は deployment environment に委譲され、SPA はその方式に依存しない。
+- loading、success、empty、failure の dashboard state が deterministic fixture で確認できる。
+- SPA および既存 client/shared の format、lint、typecheck、build、test が成功する。

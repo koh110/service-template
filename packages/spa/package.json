@@ -10,10 +10,10 @@
     "start": "vite preview --outDir dist/public",
     "test": "vp test --config=./vite.config.ts",
     "test-ci": "vp test run --config=./vite.config.ts --maxWorkers=1",
-    "format": "vp fmt package.json react-router.config.ts vite.config.ts app src --write",
-    "format-check": "vp fmt package.json react-router.config.ts vite.config.ts app src --check",
-    "lint": "vp lint react-router.config.ts vite.config.ts app src",
-    "lint-fix": "vp lint react-router.config.ts vite.config.ts app src --fix"
+    "format": "vp fmt package.json react-router.config.ts vite.config.ts app --write",
+    "format-check": "vp fmt package.json react-router.config.ts vite.config.ts app --check",
+    "lint": "vp lint react-router.config.ts vite.config.ts app",
+    "lint-fix": "vp lint react-router.config.ts vite.config.ts app --fix"
   },
   "dependencies": {
     "react": "^19.2.8",

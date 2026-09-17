@@ -22,10 +22,9 @@ type BrowserHeaderField<P> = P extends { header: infer H }
 
 type BrowserParameters<P> = Omit<P, 'header'> & BrowserHeaderField<P>
 
-type BrowserParameterField<P> =
-  [RequiredKeys<BrowserParameters<P>>] extends [never]
-    ? { parameters?: BrowserParameters<P> }
-    : { parameters: BrowserParameters<P> }
+type BrowserParameterField<P> = [RequiredKeys<BrowserParameters<P>>] extends [never]
+  ? { parameters?: BrowserParameters<P> }
+  : { parameters: BrowserParameters<P> }
 
 type BrowserOptions<
   T extends keyof schema.paths,
@@ -42,12 +41,8 @@ export function client<T extends keyof schema.paths, K extends HttpMethod>(
 ) {
   // The same-origin gateway satisfies the upstream Authorization requirement
   // from the httpOnly session cookie. Browser code must not provide that header.
-  return baseClient<T, K>(
-    url,
-    options as Parameters<typeof baseClient<T, K>>[1],
-    {
-      ...init,
-      credentials: 'include'
-    }
-  )
+  return baseClient<T, K>(url, options as Parameters<typeof baseClient<T, K>>[1], {
+    ...init,
+    credentials: 'include'
+  })
 }

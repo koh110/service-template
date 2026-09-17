@@ -3,9 +3,8 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, expect, test } from 'vite-plus/test'
 
 import { HydrateFallback } from '../root'
-import { DashboardView } from './DashboardView'
-import type { UserResponse } from '../../src/api-contract'
 import type { UserLoadResult } from '../lib/api-client'
+import { DashboardView } from './DashboardView'
 
 const successData = {
   count: 2,
@@ -23,7 +22,7 @@ const successData = {
       updated_at: 1710010800
     }
   ]
-} satisfies UserResponse
+} satisfies Extract<UserLoadResult, { ok: true }>['body']
 
 const failureResult = {
   ok: false,

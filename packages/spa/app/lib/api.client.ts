@@ -1,8 +1,5 @@
 import type * as schema from 'shared/src/schema'
-import {
-  client as baseClient,
-  type HttpMethod
-} from 'shared/src/api-client'
+import { client as baseClient, type HttpMethod } from 'shared/src/api-client'
 
 export type { APIResult } from 'shared/src/api-client'
 export { extractErrorMessage } from 'shared/src/api-client'

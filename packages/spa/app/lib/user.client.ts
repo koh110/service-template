@@ -1,9 +1,6 @@
 import { type APIResult, client } from './api.client'
 
-export type UserLoadResult = APIResult<
-  typeof client<'/api/user', 'get'>,
-  200
->
+export type UserLoadResult = APIResult<typeof client<'/api/user', 'get'>, 200>
 
 export async function fetchUsers(): Promise<UserLoadResult> {
   try {

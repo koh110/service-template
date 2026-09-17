@@ -59,9 +59,7 @@ test('success fixture shows online state, summary, and every user', () => {
 })
 
 test('empty fixture shows a domain-specific empty state', () => {
-  render(
-    <DashboardView result={{ ok: true, status: 200, body: { count: 0, user: [] } }} />
-  )
+  render(<DashboardView result={{ ok: true, status: 200, body: { count: 0, user: [] } }} />)
 
   expect(screen.getByRole('status', { name: 'API ONLINE' })).toBeTruthy()
   expect(screen.getByRole('heading', { name: 'ユーザーがありません' })).toBeTruthy()

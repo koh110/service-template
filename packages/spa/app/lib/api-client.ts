@@ -1,4 +1,7 @@
-import { parseUserResponse, type UserResponse } from '../../src/api-contract'
+import type * as schema from 'shared/src/schema'
+
+type UserResponse =
+  schema.paths['/api/user']['get']['responses']['200']['content']['application/json']
 
 export type UserLoadResult =
   | { ok: true; body: UserResponse }
@@ -23,11 +26,8 @@ export async function fetchUsers() {
       return { ok: false, status: response.status, body } satisfies UserLoadResult
     }
 
-    const parsed = parseUserResponse(await response.json())
-    if (parsed === null) {
-      return { ok: false, status: 502, body: 'Bad Gateway' } satisfies UserLoadResult
-    }
-    return { ok: true, body: parsed } satisfies UserLoadResult
+    const body = (await response.json()) as UserResponse
+    return { ok: true, body } satisfies UserLoadResult
   } catch {
     return { ok: false, status: 502, body: 'Bad Gateway' } satisfies UserLoadResult
   }

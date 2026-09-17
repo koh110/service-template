@@ -27,17 +27,7 @@ Accept: application/json
 Cookie: session=<httpOnly session value>
 ```
 
-browser code は次の形で取得する。
-
-```ts
-fetch('/api/user', {
-  cache: 'no-store',
-  credentials: 'include',
-  headers: {
-    Accept: 'application/json'
-  }
-})
-```
+browser code は `shared/src/api-client` の型付き client を `credentials: 'include'` 付きで利用する。SPA 独自の HTTP client や API contract は再実装しない。
 
 `session` cookie の値を JavaScript から読まない。credential を build-time env、HTML、client bundle、localStorage へ渡さない。
 
@@ -65,7 +55,18 @@ fetch('/api/user', {
 }
 ```
 
-response type は Next.js client と同様に `shared/src/schema` の `/api/user` `GET` 200 response から直接導出する。SPA 独自の API contract、response interface、Zod schema は再定義しない。API contract の定義元は TypeSpec から生成される shared schema に一本化する。
+request / response type は Next.js client と同様に `shared/src/schema` を参照する共通 API client から導出する。SPA 独自の API contract、response interface、Zod schema は再定義しない。API contract の定義元は TypeSpec から生成される shared schema に一本化する。
+
+## API client
+
+HTTP client の共通実装は `shared/src/api-client` に置く。
+
+- `path` と HTTP method から request / response 型を `shared/src/schema` で導出する。
+- header、query、request body を schema に基づいて型付けする。
+- response は status code ごとの discriminated union として返す。
+- Next.js と SPA は同じ client implementation を利用する。
+- browser client は薄い wrapper で `credentials: 'include'` を追加するだけとする。
+- endpoint 固有の処理は generic client へ入れない。
 
 ## Deployment boundary
 
@@ -138,33 +139,19 @@ UI は `GET /api/user` 以外の API call を行わない。
 
 ## Error handling
 
-- 401/403: authentication failure として表示する。
-- その他の non-success / network failure / JSON parse failure: connection failure として表示する。
-- upstream の error body や credential を UI / console へ出さない。
-- response shape の重複 runtime schema は SPA 側へ追加しない。型は generated shared schema から導出する。
-
-## Out of scope
-
-- SPA package 内の Node runtime server
-- SPA package 内の static file server 実装
-- SPA package 内の API proxy / BFF
-- SPA package 内の cookie-to-Authorization adapter
-- SPA 独自の API contract / response schema
-- SPA 独自の login、session 発行、refresh、logout
-- JavaScript からの cookie 読み取り
-- SSR / server action
-- user 以外の API endpoint
-- production gateway / DNS / TLS の実装
+- 401 / 403 は session が必要な状態として表示する。
+- その他の API failure / network failure は offline state として扱う。
+- API の error body は UI にそのまま表示しない。
+- credential や upstream の内部情報を画面へ出さない。
 
 ## Acceptance criteria
 
-- `packages/spa` が React Router v7 + Vite `ssr: false` の static SPA として build できる。
-- build artifact は `dist/public` の静的ファイルだけで構成され、production runtime Node server を必要としない。
-- browser client は `credentials: 'include'` で same-origin `/api/user` を1回取得する。
-- `/api/user` response type は `shared/src/schema` から直接導出し、SPA package に重複 contract/schema を持たない。
-- browser code は session cookie を直接読まない。
-- SPA package に API proxy、cookie forwarding、Authorization injection の server code が存在しない。
-- nginx 等から `dist/public` を配信し、application route を `index.html` へ fallback できる。
-- `/api/user` の実装方法は deployment environment に委譲され、SPA はその方式に依存しない。
-- loading、success、empty、failure の dashboard state が deterministic fixture で確認できる。
-- SPA および既存 client/shared の format、lint、typecheck、build、test が成功する。
+- `packages/spa` に production runtime Node server が存在しない。
+- build artifact が静的ファイルだけで構成される。
+- nginx 等で `dist/public` を配信し、application route を `index.html` へ fallback できる。
+- browser の API call は same-origin relative URL を使い `credentials: 'include'` を付ける。
+- SPA package は cookie を読まない。
+- API request / response 型は TypeSpec 生成 schema を参照する共通 API client から導出する。
+- Next.js と SPA が同じ generic API client implementation を利用する。
+- SPA package に API proxy / BFF / cookie-to-Authorization adapter を持たない。
+- format / lint / typecheck / build / test が通る。

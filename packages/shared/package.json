@@ -11,6 +11,10 @@
       "types": "./dist/src/index.d.ts",
       "default": "./dist/src/index.js"
     },
+    "./src/api-client": {
+      "types": "./dist/src/api-client.d.ts",
+      "default": "./dist/src/api-client.js"
+    },
     "./src/prisma": {
       "types": "./dist/src/prisma.d.ts",
       "default": "./dist/src/prisma.js"

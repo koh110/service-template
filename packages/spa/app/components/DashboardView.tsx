@@ -1,6 +1,6 @@
 import { Activity } from 'react'
 import { formatJst } from '../lib/format'
-import type { UserLoadResult } from '../lib/api-client'
+import type { UserLoadResult } from '../lib/user.client'
 
 type DashboardViewProps = {
   result: UserLoadResult

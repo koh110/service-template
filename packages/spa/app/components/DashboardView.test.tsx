@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, expect, test } from 'vite-plus/test'
 
 import { HydrateFallback } from '../root'
-import type { UserLoadResult } from '../lib/api-client'
+import type { UserLoadResult } from '../lib/api.client'
 import { DashboardView } from './DashboardView'
 
 const successData = {

@@ -1,5 +1,5 @@
 import { expect, test } from 'vite-plus/test'
-import { fetchUsers, type UserLoadResult } from './api-client'
+import { fetchUsers, type UserLoadResult } from './api.client'
 
 const responseBody = {
   count: 1,

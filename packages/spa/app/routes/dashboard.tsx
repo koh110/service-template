@@ -1,6 +1,6 @@
 import type { Route } from './+types/dashboard'
 import { DashboardView } from '../components/DashboardView'
-import { fetchUsers } from '../lib/api-client'
+import { fetchUsers } from '../lib/api.client'
 
 export function clientLoader() {
   return fetchUsers()

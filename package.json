@@ -16,7 +16,13 @@
     "middleware": "DOCKER_HOST_IP=$(hostname -I 2>/dev/null | awk '{print $1}') docker compose up"
   },
   "overrides": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@^0.2.9"
+    "vite": "npm:@voidzero-dev/vite-plus-core@^0.2.9",
+    "@react-router/dev": {
+      "vite": "npm:vite@^8.2.2"
+    },
+    "vite-node": {
+      "vite": "7.3.6"
+    }
   },
   "dependencies": {
     "vite-plus": "^0.2.9"

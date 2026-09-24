@@ -6,6 +6,7 @@
 import type { Plugin } from './types.ts'
 import { enforceZodEntrypointRule } from './rules/enforce-zod-entrypoint.ts'
 import { noProcessEnvOutsideConfigRule } from './rules/no-process-env-outside-config.ts'
+import { enforceLoggerLiteralRule } from './rules/enforce-logger-literal.ts'
 
 const plugin: Plugin = {
   meta: {
@@ -13,7 +14,8 @@ const plugin: Plugin = {
   },
   rules: {
     'no-process-env-outside-config': noProcessEnvOutsideConfigRule,
-    'enforce-zod-entrypoint': enforceZodEntrypointRule
+    'enforce-zod-entrypoint': enforceZodEntrypointRule,
+    'enforce-logger-literal': enforceLoggerLiteralRule
   }
 }
 

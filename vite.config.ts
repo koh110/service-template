@@ -49,10 +49,20 @@ export default defineConfig({
         ],
         rules: {
           'coding-style/no-process-env-outside-config': 'error',
-          'coding-style/enforce-zod-entrypoint': 'error',
-          // structured logging の規約(agents/logging.md)。console は logger
-          // 実装だけに閉じ込め、logger の引数は closed event schema の型検査
-          // (excess property check)が確実に効く object literal に限定する。
+          'coding-style/enforce-zod-entrypoint': 'error'
+        }
+      },
+      {
+        // structured logging の規約(agents/logging.md)。logger を持つ
+        // api/client/task では console を logger 実装だけに閉じ込め、logger の
+        // 引数は closed event schema の型検査(excess property check)が確実に
+        // 効く object literal に限定する。
+        files: [
+          'packages/api/src/**',
+          'packages/client/src/**',
+          'packages/task/src/**'
+        ],
+        rules: {
           'coding-style/enforce-logger-literal': 'error',
           'no-console': 'error'
         }

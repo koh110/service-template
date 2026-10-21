@@ -1,4 +1,4 @@
-FROM node:24 AS builder
+FROM node:24.22.1 AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json .npmrc ./
@@ -13,7 +13,7 @@ RUN npm run build -w task
 
 # migrate タスクが `npm run db-migrate:deploy -w shared` を execFile で叩くため、
 # runner にも npm(node に同梱)と shared の package.json/dist/prisma 一式を含める。
-FROM node:24-alpine AS runner
+FROM node:24.22.1-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 

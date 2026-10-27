@@ -10,6 +10,9 @@ import { requireValidatorForParamQueryRule } from './rules/require-validator-for
 import { noProcessEnvOutsideConfigRule } from './rules/no-process-env-outside-config.ts'
 import { enforceZodEntrypointRule } from './rules/enforce-zod-entrypoint.ts'
 import { enforceLoggerLiteralRule } from './rules/enforce-logger-literal.ts'
+import { noFindFirstRule } from './rules/no-find-first.ts'
+import { requireReturnResponseRule } from './rules/require-return-response.ts'
+import { noArrowComponentRule } from './rules/no-arrow-component.ts'
 
 const handlerFile = 'packages/api/src/handlers/user/index.ts'
 const tester = new RuleTester()
@@ -185,6 +188,95 @@ tester.run('enforce-logger-literal', enforceLoggerLiteralRule, {
     {
       code: "logger.log({ body: 'x', meta: { [key]: value } })",
       filename: loggerFile,
+      errors: 1
+    }
+  ]
+})
+
+tester.run('no-find-first', noFindFirstRule, {
+  valid: [
+    // 準拠: 一意制約を使った findUnique
+    { code: 'tx.user.findUnique({ where: { id } })', filename: 'packages/api/src/features/user/db.ts' },
+    // 対象外: 並び順で 1 件を選ぶことが要件(orderBy あり)
+    {
+      code: "tx.user.findFirst({ where: { name }, orderBy: { created_at: 'desc' } })",
+      filename: 'packages/api/src/features/user/db.ts'
+    }
+  ],
+  invalid: [
+    {
+      code: 'tx.user.findFirst({ where: { name } })',
+      filename: 'packages/api/src/features/user/db.ts',
+      errors: 1
+    },
+    // 変数渡しは orderBy の有無を判定できないため違反
+    {
+      code: 'tx.user.findFirst(args)',
+      filename: 'packages/api/src/features/user/db.ts',
+      errors: 1
+    }
+  ]
+})
+
+tester.run('require-return-response', requireReturnResponseRule, {
+  valid: [
+    // 準拠: return している
+    {
+      code: 'function GET() { return Response.json({ ok: true }) }',
+      filename: 'packages/client/src/app/api/route.ts'
+    },
+    // 対象外: 変数に入れるケース(既知の限界)
+    {
+      code: 'function GET() { const res = NextResponse.json({}); return res }',
+      filename: 'packages/client/src/app/api/route.ts'
+    },
+    // 対象外: Response 以外のレシーバ
+    { code: 'function f() { body.json() }', filename: 'packages/client/src/app/api/route.ts' }
+  ],
+  invalid: [
+    {
+      code: "function GET() { if (!token) { Response.json({ detail: 'x' }, { status: 401 }) } return Response.json({}) }",
+      filename: 'packages/client/src/app/api/route.ts',
+      errors: 1
+    },
+    {
+      code: 'function GET() { NextResponse.json({}) }',
+      filename: 'packages/client/src/app/api/route.ts',
+      errors: 1
+    }
+  ]
+})
+
+tester.run('no-arrow-component', noArrowComponentRule, {
+  valid: [
+    // 準拠: function 宣言
+    {
+      code: 'export function Button(props: Props) { return <button>{props.label}</button> }',
+      filename: 'packages/client/src/app/_components/button.tsx'
+    },
+    // 対象外: camelCase の Arrow Function(コンポーネントではない)
+    {
+      code: 'const handleClick = () => { return 1 }',
+      filename: 'packages/client/src/app/_components/button.tsx'
+    },
+    // 対象外: .ts ファイル
+    { code: 'const Schema = () => { return 1 }', filename: 'packages/client/src/app/_lib/schema.ts' }
+  ],
+  invalid: [
+    {
+      code: 'const Button = (props: Props) => { return <button /> }',
+      filename: 'packages/client/src/app/_components/button.tsx',
+      errors: 1
+    },
+    // FC 型注釈と Arrow Function 代入の両方を検出する
+    {
+      code: 'const Button: React.FC<Props> = (props) => { return <button /> }',
+      filename: 'packages/client/src/app/_components/button.tsx',
+      errors: 2
+    },
+    {
+      code: 'const Button: FC = function () { return <button /> }',
+      filename: 'packages/client/src/app/_components/button.tsx',
       errors: 1
     }
   ]

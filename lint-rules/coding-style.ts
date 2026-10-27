@@ -7,6 +7,9 @@ import type { Plugin } from './types.ts'
 import { enforceZodEntrypointRule } from './rules/enforce-zod-entrypoint.ts'
 import { noProcessEnvOutsideConfigRule } from './rules/no-process-env-outside-config.ts'
 import { enforceLoggerLiteralRule } from './rules/enforce-logger-literal.ts'
+import { noFindFirstRule } from './rules/no-find-first.ts'
+import { requireReturnResponseRule } from './rules/require-return-response.ts'
+import { noArrowComponentRule } from './rules/no-arrow-component.ts'
 
 const plugin: Plugin = {
   meta: {
@@ -15,7 +18,10 @@ const plugin: Plugin = {
   rules: {
     'no-process-env-outside-config': noProcessEnvOutsideConfigRule,
     'enforce-zod-entrypoint': enforceZodEntrypointRule,
-    'enforce-logger-literal': enforceLoggerLiteralRule
+    'enforce-logger-literal': enforceLoggerLiteralRule,
+    'no-find-first': noFindFirstRule,
+    'require-return-response': requireReturnResponseRule,
+    'no-arrow-component': noArrowComponentRule
   }
 }
 

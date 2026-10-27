@@ -4,7 +4,9 @@ import { hello } from './hello.js'
 test('hello greets by name and reports the user count', async () => {
   const dbClient = {
     user: {
-      count: async () => 3
+      count: async () => {
+        return 3
+      }
     }
   }
 

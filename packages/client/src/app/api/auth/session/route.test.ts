@@ -1,14 +1,13 @@
 import { NextRequest } from 'next/server'
 import { expect, test, vi } from 'vite-plus/test'
 
-vi.mock('server-only', () => ({}))
+vi.mock('server-only', () => {
+  return {}
+})
 
 const { DELETE, POST } = await import('./route')
 
-function makeSessionRequest(options: {
-  origin?: string
-  body?: unknown
-}) {
+function makeSessionRequest(options: { origin?: string; body?: unknown }) {
   const headers = new Headers({ 'Content-Type': 'application/json' })
   if (options.origin !== undefined) {
     headers.set('origin', options.origin)

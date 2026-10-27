@@ -14,6 +14,8 @@ const tokenVerifier: TokenVerifier = localTokenVerifier
 type UnauthorizedError = schema.components['schemas']['UnauthorizedError']
 
 declare module 'hono' {
+  // module augmentation は宣言マージで型を拡張するため interface でしか書けない
+  // oxlint-disable-next-line typescript/consistent-type-definitions
   interface ContextVariableMap {
     requestId: string
   }

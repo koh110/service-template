@@ -14,16 +14,20 @@ const { values } = parseArgs({
 })
 
 export async function developmentEnv(_packageName: string | undefined) {
-  const packageName = PACKAGES.find((e) => e === (_packageName || '').trim())
+  const packageName = PACKAGES.find((e) => {
+    return e === (_packageName || '').trim()
+  })
   if (!packageName) {
     console.error(`package name: "${_packageName}" not found`)
     process.exit(1)
   }
 
   const overrideEnv: Record<string, string> = {}
-  if (values['override-env']) {
-    for (const entry of values['override-env'] as string[]) {
-      if (!entry.includes('=')) {
+  // strict: false の parseArgs は値の型を string | boolean に広げるため、type guard で絞り込む
+  const overrideEntries = values['override-env']
+  if (Array.isArray(overrideEntries)) {
+    for (const entry of overrideEntries) {
+      if (typeof entry !== 'string' || !entry.includes('=')) {
         console.error(`Invalid override-env entry: "${entry}"`)
         process.exit(1)
       }

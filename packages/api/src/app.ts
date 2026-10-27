@@ -14,8 +14,8 @@ export async function createApp() {
   app.use(accessLogMiddleware())
   app.use('/api/*', corsMiddleware)
   app.onError(handleError)
-  app.notFound((c) =>
-    c.json(
+  app.notFound((c) => {
+    return c.json(
       {
         type: 'about:blank',
         title: 'Not Found',
@@ -23,9 +23,11 @@ export async function createApp() {
       } satisfies ProblemDetails,
       404
     )
-  )
+  })
 
-  app.get('/', (c) => c.text('Hello'))
+  app.get('/', (c) => {
+    return c.text('Hello')
+  })
 
   app.get('/healthcheck', async (c) => {
     const body =

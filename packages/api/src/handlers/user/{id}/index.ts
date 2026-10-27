@@ -17,34 +17,35 @@ export function createRoute(
     validator('param', (value): { id: number } => {
       const parsedId = z.coerce.number().safeParse(value.id)
       if (!parsedId.success) {
-        throw createHttpException<
-          UpdateUserResponse['400']['content']['application/json']
-        >(400, {
+        throw createHttpException<UpdateUserResponse['400']['content']['application/json']>(400, {
           type: 'about:blank',
           title: 'Bad Request',
           status: 400,
-          detail: parsedId.error.issues.map((issue) => issue.message).join(', ')
+          detail: parsedId.error.issues
+            .map((issue) => {
+              return issue.message
+            })
+            .join(', ')
         })
       }
       return { id: parsedId.data }
     }),
-    validator(
-      'json',
-      (value): UpdateUserApi['requestBody']['content']['application/json'] => {
-        const parsed = updateUserBodySchema.safeParse(value)
-        if (!parsed.success) {
-          throw createHttpException<
-            UpdateUserResponse['400']['content']['application/json']
-          >(400, {
-            type: 'about:blank',
-            title: 'Bad Request',
-            status: 400,
-            detail: parsed.error.issues.map((issue) => issue.message).join(', ')
-          })
-        }
-        return parsed.data
+    validator('json', (value): UpdateUserApi['requestBody']['content']['application/json'] => {
+      const parsed = updateUserBodySchema.safeParse(value)
+      if (!parsed.success) {
+        throw createHttpException<UpdateUserResponse['400']['content']['application/json']>(400, {
+          type: 'about:blank',
+          title: 'Bad Request',
+          status: 400,
+          detail: parsed.error.issues
+            .map((issue) => {
+              return issue.message
+            })
+            .join(', ')
+        })
       }
-    ),
+      return parsed.data
+    }),
     async (c) => {
       const id = c.req.valid('param').id
       const body = c.req.valid('json')

@@ -26,7 +26,6 @@
 
 ## JavaScript Guiedelines
 
-- arrow functionを利用する場合は改行, `{}`, `return` を省略せずに記述する
 - import/requireは相対パスを利用する
 
 ## React Guidelines
@@ -34,21 +33,18 @@
 - 以下のガイドラインに従う
   - https://react.dev/learn/you-might-not-need-an-effect
 - useEffectを変更検知で利用することを禁じる
+- useEffectでAPI Callすることを禁じる(GET は Server Actions、変更系はイベントハンドラから呼ぶ)
 - useCallback, useMemoの利用を避ける
   - パフォーマンスに問題が発生した場合のみ利用を検討する
-- ReactのコンポーネントはArrow Functionではなく通常のFunctionを利用する
-- propsはinterfaceではなくtypeで定義する
 - コンポーネント表示/非表示の制御はActivityを利用する
+  - 例外: `null` から non-null への型の絞り込みが必要なケースは Activity を使わず条件付きレンダリングにする(`mode` の条件では型が絞り込まれず、hidden でも子要素は render されるため)
 - フォームを実装するときは `agents/react-form.md` を読む(React Hook Form の規約)
 
 ## TypeScript Guidelines
 
 - Node.jsで実行する場合は `ts-node` などのライブラリを利用を禁止し `strip-types` を利用する
 - 最新のバージョンに従った書き方をする
-- anyの利用を禁止する
 - 推論できる型は推論を優先して採用し、再定義を禁じる
-- interfaceよりtypeを優先して利用する
-- type assertion を避ける
 - 可能な場合は必ず `as const` を記述する
 - 新しく型を手書きする前に `agents/type-inference.md` を読む(生成スキーマ・`ComponentProps`・Prisma payload から導出できないか確認する)
 

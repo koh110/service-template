@@ -15,16 +15,15 @@ export async function initLocal() {
   // 同じブランチ名を別の worktree/clone で同時に動かしても
   // compose の project(= volume/container/network)が衝突しないよう、
   // リポジトリの絶対パスから作った短いハッシュを混ぜる
-  const pathHash = createHash('sha256')
-    .update(repoRoot)
-    .digest('hex')
-    .slice(0, 8)
+  const pathHash = createHash('sha256').update(repoRoot).digest('hex').slice(0, 8)
   const dockerProjectName = `project-template-${replaced}-${pathHash}`
 
   const env = {
     COMPOSE_PROJECT_NAME: dockerProjectName
   }
-  const envStrs = Object.entries(env).map(([key, value]) => `${key}=${value}`)
+  const envStrs = Object.entries(env).map(([key, value]) => {
+    return `${key}=${value}`
+  })
   await fs.writeFile(targetPath, envStrs.join('\n'), 'utf-8')
   console.log('Local environment initialized successfully.')
 }

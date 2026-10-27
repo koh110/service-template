@@ -143,6 +143,9 @@ export async function client<
 
   type Res = schema.paths[T][K] extends { responses: infer R } ? R : never
 
+  // fetch のレスポンス body は実行時に検証していないため、OpenAPI 契約の型を信頼して付与する
+  // (サーバー側は satisfies schema.paths で同じ契約に縛られている)
+  // oxlint-disable-next-line typescript/consistent-type-assertions
   return {
     status: res.status,
     body

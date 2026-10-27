@@ -33,7 +33,9 @@ const test = baseTest.extend<{
     const users = await dbClient.user.findMany({
       where: {
         name: {
-          in: data.map((e) => e.name)
+          in: data.map((e) => {
+            return e.name
+          })
         }
       }
     })

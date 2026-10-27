@@ -14,13 +14,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: 'invalid origin' }, { status: 403 })
   }
 
-  const body = await request.json().catch(() => null)
+  const body = await request.json().catch(() => {
+    return null
+  })
   const idToken = typeof body?.idToken === 'string' ? body.idToken : null
   if (!idToken) {
-    return NextResponse.json(
-      { message: 'idToken is required' },
-      { status: 400 }
-    )
+    return NextResponse.json({ message: 'idToken is required' }, { status: 400 })
   }
 
   let claims: Awaited<ReturnType<typeof authProvider.verifyIdToken>>

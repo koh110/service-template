@@ -32,7 +32,9 @@ export function runDockerCompose(args: string[]) {
       stdio: 'inherit'
     })
     child.on('error', reject)
-    child.on('close', (code) => resolve(code ?? 1))
+    child.on('close', (code) => {
+      resolve(code ?? 1)
+    })
   })
 }
 

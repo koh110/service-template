@@ -22,7 +22,9 @@ beforeAll(async () => {
 vi.mock('./lib/database.js', async (importOriginal) => {
   return {
     ...(await importOriginal<typeof import('./lib/database.js')>()),
-    createClient: () => dbClient
+    createClient: () => {
+      return dbClient
+    }
   }
 })
 

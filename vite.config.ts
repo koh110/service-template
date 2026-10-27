@@ -8,12 +8,20 @@ export default defineConfig({
     trailingComma: 'none'
   },
   lint: {
-    ignorePatterns: ['**/dist/**'],
+    // 生成物(openapi-typescript / Prisma の出力)は生成器の書式に従うため対象外にする
+    ignorePatterns: ['**/dist/**', '**/src/generated/**'],
     // api の handler / validator 実装規約(agents/api-contract.md)を機械的に強制する
     // カスタム JS plugin。ルールの有効化(severity)は overrides 側で
     // packages/api/src 配下に限定して行う(他パッケージでは無効のまま)。
     jsPlugins: ['./lint-rules/index.ts', './lint-rules/coding-style.ts'],
     rules: {
+      // AGENTS.md の TypeScript / JavaScript Guidelines を機械的に強制する。
+      // type assertion は外部境界(JSON.parse の結果など)でどうしても必要な箇所に限り、
+      // disable コメントに理由を書いて許容する。`as const` は対象外。
+      'typescript/no-explicit-any': 'error',
+      'typescript/consistent-type-definitions': ['error', 'type'],
+      'typescript/consistent-type-assertions': ['error', { assertionStyle: 'never' }],
+      'arrow-body-style': ['error', 'always'],
       // 認証のローカルスタブ実装(local-provider/local-verifier)への import が
       // 存在する間は warning を出す。実プロバイダに差し替えて import が無くなれば消える。
       // 相対パスの深さやファイルの移動に影響されないよう name(完全一致)ではなく
@@ -49,7 +57,16 @@ export default defineConfig({
         ],
         rules: {
           'coding-style/no-process-env-outside-config': 'error',
-          'coding-style/enforce-zod-entrypoint': 'error'
+          'coding-style/enforce-zod-entrypoint': 'error',
+          'coding-style/require-return-response': 'error',
+          'coding-style/no-arrow-component': 'error'
+        }
+      },
+      {
+        // Prisma で DB アクセスするパッケージ(agents/prisma-guidelines.md)。
+        files: ['packages/api/src/**', 'packages/task/src/**'],
+        rules: {
+          'coding-style/no-find-first': 'error'
         }
       },
       {

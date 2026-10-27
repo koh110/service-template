@@ -17,15 +17,11 @@ export async function getTestDbParameters(env: NodeJS.ProcessEnv) {
     if (process.env.TEST_DB_PORT) {
       return Number(process.env.TEST_DB_PORT)
     }
-    const { stdout } = await execAsync(
-      `npm run -s docker-compose -w bin -- port test-db 5432`
-    )
+    const { stdout } = await execAsync(`npm run -s docker-compose -w bin -- port test-db 5432`)
     const parts = stdout.trim().split(':')
     return Number(parts[1])
   })()
-  const testDbName = env.VITEST_POOL_ID
-    ? getTestDbName(env.VITEST_POOL_ID)
-    : null
+  const testDbName = env.VITEST_POOL_ID ? getTestDbName(env.VITEST_POOL_ID) : null
 
   return {
     user,
@@ -38,8 +34,7 @@ export async function getTestDbParameters(env: NodeJS.ProcessEnv) {
 }
 
 export async function getTestDbClient(env: NodeJS.ProcessEnv) {
-  const { user, password, host, port, testDbName } =
-    await getTestDbParameters(env)
+  const { user, password, host, port, testDbName } = await getTestDbParameters(env)
   const databaseUrl = `postgresql://${user}:${password}@${host}:${port}/${testDbName}`
   const adapter = new PrismaPg({ connectionString: databaseUrl })
   return new PrismaClient({ adapter })
@@ -49,6 +44,10 @@ export async function truncateTables(
   dbClient: PrismaClient,
   tables: (typeof Prisma.ModelName)[keyof typeof Prisma.ModelName][]
 ) {
-  const tableNames = tables.map((table) => `"${table}"`).join(', ')
+  const tableNames = tables
+    .map((table) => {
+      return `"${table}"`
+    })
+    .join(', ')
   await dbClient.$executeRawUnsafe(`TRUNCATE TABLE ${tableNames} CASCADE`)
 }

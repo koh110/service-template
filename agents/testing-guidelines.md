@@ -16,7 +16,7 @@ DB を使うテストは vitest の worker 単位で並列実行される(`VITES
 - `describe` を使わない(共通の `beforeEach` / `beforeAll` スコープを作る誘因になり、上記の共有 seed 問題を招きやすいため。フラットな `test()` を使う)
   - この規約は `vite.config.ts` の `lint.overrides`(`*.test.ts` に対して `no-restricted-imports` で `vite-plus/test` からの `describe` import を error にする)で機械的に強制している
 - `truncateTables` は `beforeAll` 以外で呼ばない(`beforeEach` 等で呼ぶと、同一 worker 内で並行実行される他テストのデータまで消してしまう)
-- globalSetup(`test/globalSetup.ts` 等)でモジュールをモックしない。複数テストファイルで共有したいモックがある場合は、モック本体ではなく mock factory 関数(`vi.mock` に渡すコールバック)を export し、各テストファイル側で個別に `vi.mock` を呼ぶ
+- グローバルな setup(`setupFiles` の `test/setup.ts`、`globalSetup` の `test/globalSetup.ts` 等)でモジュールをモックしない。全テストに効くモックは依存関係を見えなくし、特定のテストで実物が必要になったときに外しにくい。複数テストファイルで共有したいモックがある場合は、モック本体ではなく mock factory 関数(`vi.mock` に渡すコールバック)を export し、各テストファイル側で個別に `vi.mock` を呼ぶ
 - pagination の検証のためだけに大量データを投入しない(実行コストが増えるだけでなく、他テストとのデータ競合リスクも増える。境界値(0件/1件/上限+1件など)を少数のデータで検証する)
 
 ## 固定 unique 値を使わざるを得ない場合

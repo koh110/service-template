@@ -36,14 +36,13 @@ export default function Page() {
 
   return (
     <div className="flex items-center justify-center p-4">
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col gap-2 min-w-64"
-      >
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2 min-w-64">
         <TextField.Root
           type="email"
           value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          onChange={(event) => {
+            setEmail(event.target.value)
+          }}
           placeholder="you@example.com"
           required
         />

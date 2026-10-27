@@ -41,6 +41,9 @@ export function client<T extends keyof schema.paths, K extends HttpMethod>(
 ) {
   // The same-origin gateway satisfies the upstream Authorization requirement
   // from the httpOnly session cookie. Browser code must not provide that header.
+  // BrowserOptions は baseClient の options から Authorization を除いた部分型だが、
+  // generic な conditional type のままでは tsc が代入可能性を証明できない
+  // oxlint-disable-next-line typescript/consistent-type-assertions
   return baseClient<T, K>(url, options as Parameters<typeof baseClient<T, K>>[1], {
     ...init,
     credentials: 'include'

@@ -13,6 +13,10 @@
 - 実装完了の条件: 変更したパッケージに対応する CI ワークフロー(`.github/workflows/ci-{api,client,shared,task}.yml`)に書かれているコマンドをローカルで実行し、build/lint/test がエラーなく通ること。CI と異なるコマンドを実行して「通った」と判断しない
 - 特定の作業をするときだけ必要な詳細ガイドラインは `agents/` 配下に置き、この AGENTS.md からは「いつ読むか」を1行で指す
 
+## Logging Guidelines
+
+- `logger.*` を呼ぶとき、logger / redact 実装や access log / error handler を変更するときは `agents/logging.md` を読む(console の単一入口、sensitive field の redaction、error の安全な serialize、requestId の引き回し)
+
 ## Monorepo Guidelines
 
 - 複数パッケージ(api/bin/client/shared)の実装がたまたま似ていても、それだけを理由に共通化しない(ルートに tsconfig.base.json を作って extends させる、logger/fetcher のような実装コードを shared に抽出する、など)
